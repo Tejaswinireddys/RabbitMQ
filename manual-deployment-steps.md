@@ -150,6 +150,15 @@ sudo rabbitmqctl add_user admin admin123
 sudo rabbitmqctl set_user_tags admin administrator
 sudo rabbitmqctl set_permissions -p / admin ".*" ".*" ".*"
 
+# Create custom users Teja and Aswini
+sudo rabbitmqctl add_user teja Teja@2024
+sudo rabbitmqctl set_user_tags teja management
+sudo rabbitmqctl set_permissions -p / teja ".*" ".*" ".*"
+
+sudo rabbitmqctl add_user aswini Aswini@2024
+sudo rabbitmqctl set_user_tags aswini management
+sudo rabbitmqctl set_permissions -p / aswini ".*" ".*" ".*"
+
 # Delete default guest user (security)
 sudo rabbitmqctl delete_user guest
 

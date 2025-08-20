@@ -9,6 +9,18 @@
       "password_hash": "JHdweEWsIv6fs7B8JC4M3g7VhUJ5MiT5",
       "hashing_algorithm": "rabbit_password_hashing_sha256",
       "tags": ["administrator"]
+    },
+    {
+      "name": "teja",
+      "password_hash": "gqgGYdXzMFazKh6o7XZ0gO1nZiOQlFjj",
+      "hashing_algorithm": "rabbit_password_hashing_sha256",
+      "tags": ["management"]
+    },
+    {
+      "name": "aswini",
+      "password_hash": "kBvXz2oZEfU8RyXh9jNnK7cVdP6LmN3t",
+      "hashing_algorithm": "rabbit_password_hashing_sha256",
+      "tags": ["management"]
     }
   ],
   "vhosts": [
@@ -19,6 +31,20 @@
   "permissions": [
     {
       "user": "admin",
+      "vhost": "/",
+      "configure": ".*",
+      "write": ".*",
+      "read": ".*"
+    },
+    {
+      "user": "teja",
+      "vhost": "/",
+      "configure": ".*",
+      "write": ".*",
+      "read": ".*"
+    },
+    {
+      "user": "aswini",
       "vhost": "/",
       "configure": ".*",
       "write": ".*",

@@ -93,8 +93,10 @@ sudo rabbitmqctl eval 'rabbit_mnesia:status().'
 
 ## Management Interface
 - Access via: http://node1:15672, http://node2:15673, http://node3:15674
-- Username: admin
-- Password: admin123
+- Available Users:
+  - admin/admin123 (Administrator)
+  - teja/Teja@2024 (Management User)
+  - aswini/Aswini@2024 (Management User)
 
 ## Monitoring and Alerts
 - Prometheus metrics enabled on `/metrics` endpoint

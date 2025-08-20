@@ -95,6 +95,17 @@ else
     sudo rabbitmqctl add_user admin admin123
     sudo rabbitmqctl set_user_tags admin administrator
     sudo rabbitmqctl set_permissions -p / admin ".*" ".*" ".*"
+    
+    # Create custom users Teja and Aswini
+    sudo rabbitmqctl add_user teja Teja@2024
+    sudo rabbitmqctl set_user_tags teja management
+    sudo rabbitmqctl set_permissions -p / teja ".*" ".*" ".*"
+    
+    sudo rabbitmqctl add_user aswini Aswini@2024
+    sudo rabbitmqctl set_user_tags aswini management
+    sudo rabbitmqctl set_permissions -p / aswini ".*" ".*" ".*"
+    
+    echo "Created users: admin, teja, aswini"
 fi
 
 # Check cluster status
@@ -103,4 +114,7 @@ sudo rabbitmqctl cluster_status
 
 echo "Node $NODE_NAME setup completed!"
 echo "Management interface: http://$NODE_IP:15672"
-echo "Default credentials: admin/admin123"
+echo "Available credentials:"
+echo "  - admin/admin123 (Administrator)"
+echo "  - teja/Teja@2024 (Management User)"
+echo "  - aswini/Aswini@2024 (Management User)"

@@ -399,6 +399,18 @@ cat > ~/rabbitmq-deployment/config/definitions.json << 'EOF'
       "password_hash": "JHdweEWsIv6fs7B8JC4M3g7VhUJ5MiT5",
       "hashing_algorithm": "rabbit_password_hashing_sha256",
       "tags": ["administrator"]
+    },
+    {
+      "name": "teja",
+      "password_hash": "gqgGYdXzMFazKh6o7XZ0gO1nZiOQlFjj",
+      "hashing_algorithm": "rabbit_password_hashing_sha256",
+      "tags": ["management"]
+    },
+    {
+      "name": "aswini",
+      "password_hash": "kBvXz2oZEfU8RyXh9jNnK7cVdP6LmN3t",
+      "hashing_algorithm": "rabbit_password_hashing_sha256",
+      "tags": ["management"]
     }
   ],
   "vhosts": [
@@ -409,6 +421,20 @@ cat > ~/rabbitmq-deployment/config/definitions.json << 'EOF'
   "permissions": [
     {
       "user": "admin",
+      "vhost": "/",
+      "configure": ".*",
+      "write": ".*",
+      "read": ".*"
+    },
+    {
+      "user": "teja",
+      "vhost": "/",
+      "configure": ".*",
+      "write": ".*",
+      "read": ".*"
+    },
+    {
+      "user": "aswini",
       "vhost": "/",
       "configure": ".*",
       "write": ".*",
@@ -526,6 +552,16 @@ if [[ "$IS_PRIMARY" == "y" ]]; then
     sudo rabbitmqctl add_user admin admin123
     sudo rabbitmqctl set_user_tags admin administrator
     sudo rabbitmqctl set_permissions -p / admin ".*" ".*" ".*"
+    
+    # Create custom users Teja and Aswini
+    echo "Creating custom users..."
+    sudo rabbitmqctl add_user teja Teja@2024
+    sudo rabbitmqctl set_user_tags teja management
+    sudo rabbitmqctl set_permissions -p / teja ".*" ".*" ".*"
+    
+    sudo rabbitmqctl add_user aswini Aswini@2024
+    sudo rabbitmqctl set_user_tags aswini management
+    sudo rabbitmqctl set_permissions -p / aswini ".*" ".*" ".*"
     
     # Delete default guest user
     sudo rabbitmqctl delete_user guest
@@ -809,7 +845,10 @@ echo "Step 14: Setup Log Rotation"
 
 echo "=== RabbitMQ Deployment Completed Successfully! ==="
 echo "Management Interface: http://$(hostname):15672"
-echo "Default Credentials: admin/admin123"
+echo "Available Credentials:"
+echo "  - admin/admin123 (Administrator)"
+echo "  - teja/Teja@2024 (Management User)"
+echo "  - aswini/Aswini@2024 (Management User)"
 echo "Next Steps:"
 echo "1. Configure SSL certificates if needed"
 echo "2. Set up monitoring and alerting"
