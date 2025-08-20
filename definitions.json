@@ -1,0 +1,64 @@
+{
+  "rabbit_version": "4.1.0",
+  "rabbitmq_version": "4.1.0",
+  "product_name": "RabbitMQ",
+  "product_version": "4.1.0",
+  "users": [
+    {
+      "name": "admin",
+      "password_hash": "JHdweEWsIv6fs7B8JC4M3g7VhUJ5MiT5",
+      "hashing_algorithm": "rabbit_password_hashing_sha256",
+      "tags": ["administrator"]
+    }
+  ],
+  "vhosts": [
+    {
+      "name": "/"
+    }
+  ],
+  "permissions": [
+    {
+      "user": "admin",
+      "vhost": "/",
+      "configure": ".*",
+      "write": ".*",
+      "read": ".*"
+    }
+  ],
+  "topic_permissions": [],
+  "parameters": [
+    {
+      "value": {
+        "ha-mode": "exactly",
+        "ha-params": 3,
+        "ha-sync-mode": "automatic",
+        "queue-type": "quorum"
+      },
+      "vhost": "/",
+      "component": "policy",
+      "name": "ha-three-nodes"
+    }
+  ],
+  "global_parameters": [
+    {
+      "name": "cluster_name",
+      "value": "rabbitmq-cluster"
+    }
+  ],
+  "policies": [
+    {
+      "vhost": "/",
+      "name": "quorum-queue-policy",
+      "pattern": ".*",
+      "apply-to": "queues",
+      "definition": {
+        "queue-type": "quorum",
+        "overflow": "reject-publish"
+      },
+      "priority": 1
+    }
+  ],
+  "queues": [],
+  "exchanges": [],
+  "bindings": []
+}
