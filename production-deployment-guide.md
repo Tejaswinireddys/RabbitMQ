@@ -202,6 +202,10 @@ cluster_formation.classic_config.nodes.3 = rabbit@prod-rmq-03
 
 # Cluster stability settings
 cluster_partition_handling = pause_minority
+
+# Network partition detection settings  
+net_ticktime = 60
+cluster_keepalive_interval = 10000
 cluster_formation.randomized_startup_delay_range.min = 5
 cluster_formation.randomized_startup_delay_range.max = 30
 
