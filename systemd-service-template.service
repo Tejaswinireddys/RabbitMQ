@@ -1,0 +1,38 @@
+[Unit]
+Description=RabbitMQ broker with Auto-Recovery (%i)
+After=network.target epmd@0.0.0.0.socket network-online.target
+Wants=network.target epmd@0.0.0.0.socket network-online.target
+
+[Service]
+Type=notify
+User=rabbitmq
+Group=rabbitmq
+NotifyAccess=all
+TimeoutStartSec=${RABBITMQ_STARTUP_TIMEOUT}
+TimeoutStopSec=120
+
+# Environment variables for auto-recovery
+Environment=RABBITMQ_ENVIRONMENT=%i
+Environment=RABBITMQ_NODENAME=rabbit@%H
+Environment=RABBITMQ_CONFIG_FILE=/etc/rabbitmq/rabbitmq
+Environment=RABBITMQ_AUTO_RECOVERY_ENABLED=${RABBITMQ_AUTO_RECOVERY_ENABLED}
+
+# Service execution with startup delay for cluster formation
+ExecStartPre=/bin/sleep ${RABBITMQ_RANDOMIZED_STARTUP_DELAY_MIN}
+ExecStart=/usr/lib/rabbitmq/bin/rabbitmq-server
+ExecStop=/usr/lib/rabbitmq/bin/rabbitmqctl shutdown
+
+# Auto-recovery configuration
+Restart=always
+RestartSec=${RABBITMQ_AUTO_RECOVERY_DELAY}
+StartLimitBurst=10
+StartLimitIntervalSec=600
+
+# Post-start health check and recovery
+ExecStartPost=/bin/bash -c 'sleep 60 && /opt/rabbitmq-deployment/health-check-and-recover.sh %i'
+
+# Resource limits
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target
