@@ -1,0 +1,67 @@
+Sub ImportHTMLToPowerPoint()
+    Dim htmlFile As String
+    Dim ppt As Presentation
+    Dim sld As Slide
+    Dim shp As Shape
+    Dim content As String
+    Dim fileNum As Integer
+    Dim line As String
+    Dim slideTitle As String
+    Dim slideBody As String
+    Dim isTitle As Boolean
+
+    ' Set the path to your HTML file
+    htmlFile = "C:\Path\To\Your\file.html" ' Update with your HTML file path
+
+    ' Open the HTML file
+    fileNum = FreeFile
+    Open htmlFile For Input As #fileNum
+
+    ' Initialize variables
+    Set ppt = ActivePresentation
+    slideTitle = ""
+    slideBody = ""
+    isTitle = False
+
+    ' Read HTML file line by line
+    Do While Not EOF(fileNum)
+        Line Input #fileNum, line
+        ' Simple parsing for <h1> and <p> tags
+        If InStr(line, "<h1>") > 0 Then
+            slideTitle = Mid(line, InStr(line, "<h1>") + 4, InStr(line, "</h1>") - InStr(line, "<h1>") - 4)
+            isTitle = True
+        ElseIf InStr(line, "<p>") > 0 Then
+            slideBody = slideBody & Mid(line, InStr(line, "<p>") + 3, InStr(line, "</p>") - InStr(line, "<p>") - 3) & vbNewLine
+        EndIf
+    Loop
+    Close #fileNum
+
+    ' Create a new slide
+    Set sld = ppt.Slides.Add(ppt.Slides.Count + 1, ppLayoutText)
+    Set shp = sld.Shapes.Title
+    shp.TextFrame.TextRange.Text = slideTitle
+    Set shp = sld.Shapes.Item(2)
+    shp.TextFrame.TextRange.Text = slideBody
+
+    MsgBox "HTML content imported to PowerPoint!"
+End Sub
+
+
+
+
+
+
+
+
+
+
+
+
+
+steps to use
+Open PowerPoint and press Alt + F11 to open the VBA editor.
+Go to Insert > Module and paste the code above.
+Update the htmlFile path to your HTML file’s location.
+Run the macro (F5 or Run > Run Sub/UserForm).
+The macro extracts <h1> (title) and <p> (body) content and creates a slide.
+
