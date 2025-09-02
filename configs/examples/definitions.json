@@ -6,21 +6,21 @@
   "users": [
     {
       "name": "admin",
-      "password_hash": "JHdweEWsIv6fs7B8JC4M3g7VhUJ5MiT5",
+      "password_hash": "CHANGE_ME_IN_ENVIRONMENT",
       "hashing_algorithm": "rabbit_password_hashing_sha256",
-      "tags": ["administrator"]
+      "tags": "administrator"
     },
     {
       "name": "teja",
-      "password_hash": "gqgGYdXzMFazKh6o7XZ0gO1nZiOQlFjj",
+      "password_hash": "CHANGE_ME_IN_ENVIRONMENT",
       "hashing_algorithm": "rabbit_password_hashing_sha256",
-      "tags": ["management"]
+      "tags": "management"
     },
     {
       "name": "aswini",
-      "password_hash": "kBvXz2oZEfU8RyXh9jNnK7cVdP6LmN3t",
+      "password_hash": "CHANGE_ME_IN_ENVIRONMENT",
       "hashing_algorithm": "rabbit_password_hashing_sha256",
-      "tags": ["management"]
+      "tags": "management"
     }
   ],
   "vhosts": [
@@ -52,19 +52,7 @@
     }
   ],
   "topic_permissions": [],
-  "parameters": [
-    {
-      "value": {
-        "ha-mode": "exactly",
-        "ha-params": 3,
-        "ha-sync-mode": "automatic",
-        "queue-type": "quorum"
-      },
-      "vhost": "/",
-      "component": "policy",
-      "name": "ha-three-nodes"
-    }
-  ],
+  "parameters": [],
   "global_parameters": [
     {
       "name": "cluster_name",
@@ -74,17 +62,46 @@
   "policies": [
     {
       "vhost": "/",
-      "name": "quorum-queue-policy",
+      "name": "ha-all",
       "pattern": ".*",
       "apply-to": "queues",
       "definition": {
-        "queue-type": "quorum",
-        "overflow": "reject-publish"
+        "ha-mode": "all",
+        "ha-sync-mode": "automatic"
       },
-      "priority": 1
+      "priority": 0
     }
   ],
-  "queues": [],
-  "exchanges": [],
-  "bindings": []
+  "queues": [
+    {
+      "name": "example-queue",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "quorum"
+      }
+    }
+  ],
+  "exchanges": [
+    {
+      "name": "example-exchange",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    }
+  ],
+  "bindings": [
+    {
+      "source": "example-exchange",
+      "vhost": "/",
+      "destination": "example-queue",
+      "destination_type": "queue",
+      "routing_key": "example.#",
+      "arguments": {}
+    }
+  ]
 }

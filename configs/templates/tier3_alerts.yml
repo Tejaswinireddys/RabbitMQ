@@ -1,0 +1,254 @@
+groups:
+  - name: tier3_technical_alerts
+    rules:
+      - alert: HighChannelCount
+        expr: rabbitmq_channels_total > 2000
+        for: 5m
+        labels:
+          tier: "tier3"
+          severity: "warning"
+          technical_impact: "medium"
+          team: "development"
+        annotations:
+          summary: "High channel count detected"
+          description: "More than 2000 channels on {{ $labels.instance }}"
+          technical_impact: "Memory overhead. Check for channel leaks in applications."
+          action_required: "Review channel usage patterns. Check for channel leaks. Monitor memory consumption."
+
+      - alert: HighExchangeCount
+        expr: rabbitmq_exchanges_total > 100
+        for: 5m
+        labels:
+          tier: "tier3"
+          severity: "info"
+          technical_impact: "low"
+          team: "development"
+        annotations:
+          summary: "High exchange count"
+          description: "More than 100 exchanges on {{ $labels.instance }}"
+          technical_impact: "Configuration complexity. Consider consolidation."
+          action_required: "Review exchange usage. Consider consolidation. Monitor configuration complexity."
+
+      - alert: HighQueueCount
+        expr: rabbitmq_queues_total > 200
+        for: 5m
+        labels:
+          tier: "tier3"
+          severity: "info"
+          technical_impact: "low"
+          team: "development"
+        annotations:
+          summary: "High queue count"
+          description: "More than 200 queues on {{ $labels.instance }}"
+          technical_impact: "Resource overhead. Consider queue consolidation."
+          action_required: "Review queue usage patterns. Consider consolidation. Monitor resource usage."
+
+      - alert: HighConsumerCount
+        expr: rabbitmq_consumers_total > 500
+        for: 5m
+        labels:
+          tier: "tier3"
+          severity: "info"
+          technical_impact: "low"
+          team: "development"
+        annotations:
+          summary: "High consumer count"
+          description: "More than 500 consumers on {{ $labels.instance }}"
+          technical_impact: "Connection overhead. Monitor consumer efficiency."
+          action_required: "Review consumer patterns. Monitor efficiency. Consider optimization."
+
+      - alert: HighMessageRedelivery
+        expr: rate(rabbitmq_queue_messages_redelivered_total[5m]) > 10
+        for: 5m
+        labels:
+          tier: "tier3"
+          severity: "warning"
+          technical_impact: "medium"
+          team: "development"
+        annotations:
+          summary: "High message redelivery rate"
+          description: "Message redelivery rate is above 10 msg/sec on {{ $labels.instance }}"
+          technical_impact: "Consumer issues. Check application error handling."
+          action_required: "Investigate consumer errors. Review error handling. Check application health."
+
+      - alert: HighMessageAckRate
+        expr: rate(rabbitmq_queue_messages_ack_total[5m]) > 1000
+        for: 5m
+        labels:
+          tier: "tier3"
+          severity: "info"
+          technical_impact: "low"
+          team: "development"
+        annotations:
+          summary: "High message acknowledgment rate"
+          description: "Message acknowledgment rate is above 1000 msg/sec on {{ $labels.instance }}"
+          technical_impact: "High throughput. Monitor for performance issues."
+          action_required: "Monitor performance metrics. Check for bottlenecks. Consider optimization."
+
+      - alert: ClusterNetworkIssues
+        expr: rabbitmq_cluster_links < 2
+        for: 2m
+        labels:
+          tier: "tier3"
+          severity: "warning"
+          technical_impact: "medium"
+          team: "development"
+        annotations:
+          summary: "Cluster network connectivity issues"
+          description: "Fewer than 2 cluster links on {{ $labels.instance }}"
+          technical_impact: "Cluster communication degraded. Check network connectivity."
+          action_required: "Check network connectivity. Restart network services. Monitor cluster health."
+
+      - alert: HighProcessCount
+        expr: rabbitmq_processes_total > 10000
+        for: 5m
+        labels:
+          tier: "tier3"
+          severity: "warning"
+          technical_impact: "medium"
+          team: "development"
+        annotations:
+          summary: "High Erlang process count"
+          description: "More than 10,000 Erlang processes on {{ $labels.instance }}"
+          technical_impact: "Memory overhead. Check for process leaks."
+          action_required: "Investigate process usage. Check for process leaks. Monitor memory consumption."
+
+      - alert: HighMemoryFragmentation
+        expr: (rabbitmq_erlang_vm_memory_bytes_total - rabbitmq_process_resident_memory_bytes) / rabbitmq_erlang_vm_memory_bytes_total * 100 > 30
+        for: 5m
+        labels:
+          tier: "tier3"
+          severity: "warning"
+          technical_impact: "medium"
+          team: "development"
+        annotations:
+          summary: "High memory fragmentation detected"
+          description: "Memory fragmentation is above 30% on {{ $labels.instance }}"
+          technical_impact: "Memory efficiency reduced. Performance may degrade."
+          action_required: "Monitor memory patterns. Consider restart if sustained. Check for memory leaks."
+
+      - alert: HighDiskIOWait
+        expr: rate(rabbitmq_disk_free_bytes[5m]) < -1000000
+        for: 5m
+        labels:
+          tier: "tier3"
+          severity: "warning"
+          technical_impact: "medium"
+          team: "development"
+        annotations:
+          summary: "High disk I/O activity detected"
+          description: "Disk usage is increasing rapidly on {{ $labels.instance }}"
+          technical_impact: "Disk performance may degrade. Check for disk issues."
+          action_required: "Check disk health. Monitor I/O patterns. Investigate disk usage."
+
+      - alert: HighConnectionChurn
+        expr: abs(rate(rabbitmq_connections_total[5m])) > 10
+        for: 5m
+        labels:
+          tier: "tier3"
+          severity: "warning"
+          technical_impact: "medium"
+          team: "development"
+        annotations:
+          summary: "High connection churn detected"
+          description: "Connection count is changing rapidly on {{ $labels.instance }}"
+          technical_impact: "Connection instability. Check for connection issues."
+          action_required: "Investigate connection patterns. Check for connection leaks. Monitor stability."
+
+      - alert: HighChannelChurn
+        expr: abs(rate(rabbitmq_channels_total[5m])) > 20
+        for: 5m
+        labels:
+          tier: "tier3"
+          severity: "warning"
+          technical_impact: "medium"
+          team: "development"
+        annotations:
+          summary: "High channel churn detected"
+          description: "Channel count is changing rapidly on {{ $labels.instance }}"
+          technical_impact: "Channel instability. Check for channel issues."
+          action_required: "Investigate channel patterns. Check for channel leaks. Monitor stability."
+
+      - alert: HighQueueChurn
+        expr: abs(rate(rabbitmq_queues_total[5m])) > 5
+        for: 5m
+        labels:
+          tier: "tier3"
+          severity: "warning"
+          technical_impact: "medium"
+          team: "development"
+        annotations:
+          summary: "High queue churn detected"
+          description: "Queue count is changing rapidly on {{ $labels.instance }}"
+          technical_impact: "Queue instability. Check for queue issues."
+          action_required: "Investigate queue patterns. Check for queue leaks. Monitor stability."
+
+      - alert: HighConsumerChurn
+        expr: abs(rate(rabbitmq_consumers_total[5m])) > 10
+        for: 5m
+        labels:
+          tier: "tier3"
+          severity: "warning"
+          technical_impact: "medium"
+          team: "development"
+        annotations:
+          summary: "High consumer churn detected"
+          description: "Consumer count is changing rapidly on {{ $labels.instance }}"
+          technical_impact: "Consumer instability. Check for consumer issues."
+          action_required: "Investigate consumer patterns. Check for consumer leaks. Monitor stability."
+
+      - alert: HighExchangeChurn
+        expr: abs(rate(rabbitmq_exchanges_total[5m])) > 2
+        for: 5m
+        labels:
+          tier: "tier3"
+          severity: "warning"
+          technical_impact: "medium"
+          team: "development"
+        annotations:
+          summary: "High exchange churn detected"
+          description: "Exchange count is changing rapidly on {{ $labels.instance }}"
+          technical_impact: "Exchange instability. Check for exchange issues."
+          action_required: "Investigate exchange patterns. Check for exchange leaks. Monitor stability."
+
+      - alert: HighProcessChurn
+        expr: abs(rate(rabbitmq_processes_total[5m])) > 100
+        for: 5m
+        labels:
+          tier: "tier3"
+          severity: "warning"
+          technical_impact: "medium"
+          team: "development"
+        annotations:
+          summary: "High process churn detected"
+          description: "Process count is changing rapidly on {{ $labels.instance }}"
+          technical_impact: "Process instability. Check for process issues."
+          action_required: "Investigate process patterns. Check for process leaks. Monitor stability."
+
+      - alert: HighMessageRateVariability
+        expr: stddev(rate(rabbitmq_queue_messages_published_total[5m])) > 100
+        for: 5m
+        labels:
+          tier: "tier3"
+          severity: "info"
+          technical_impact: "low"
+          team: "development"
+        annotations:
+          summary: "High message rate variability detected"
+          description: "Message publishing rate is highly variable on {{ $labels.instance }}"
+          technical_impact: "Unpredictable load patterns. Monitor for issues."
+          action_required: "Monitor load patterns. Check for application issues. Consider load balancing."
+
+      - alert: HighConnectionRateVariability
+        expr: stddev(rate(rabbitmq_connections_total[5m])) > 20
+        for: 5m
+        labels:
+          tier: "tier3"
+          severity: "info"
+          technical_impact: "low"
+          team: "development"
+        annotations:
+          summary: "High connection rate variability detected"
+          description: "Connection rate is highly variable on {{ $labels.instance }}"
+          technical_impact: "Unpredictable connection patterns. Monitor for issues."
+          action_required: "Monitor connection patterns. Check for application issues. Consider connection pooling."

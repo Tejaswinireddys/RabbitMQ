@@ -1,0 +1,184 @@
+groups:
+  - name: tier2_operational_alerts
+    rules:
+      - alert: HighMemoryUsage
+        expr: rabbitmq_process_resident_memory_bytes / rabbitmq_erlang_vm_memory_bytes_total * 100 > 75
+        for: 5m
+        labels:
+          tier: "tier2"
+          severity: "warning"
+          operational_impact: "medium"
+          team: "operations"
+        annotations:
+          summary: "High memory usage detected"
+          description: "RabbitMQ memory usage is above 75% on {{ $labels.instance }}"
+          operational_impact: "Performance may degrade. Consider restarting or scaling."
+          action_required: "Monitor memory trends. Check for memory leaks. Consider restart if sustained."
+
+      - alert: LowDiskSpace
+        expr: rabbitmq_disk_free_bytes / rabbitmq_disk_free_bytes_total * 100 < 25
+        for: 5m
+        labels:
+          tier: "tier2"
+          severity: "warning"
+          operational_impact: "medium"
+          team: "operations"
+        annotations:
+          summary: "Low disk space warning"
+          description: "RabbitMQ disk space is below 25% on {{ $labels.instance }}"
+          operational_impact: "Risk of service failure. Clean up logs or expand storage."
+          action_required: "Clean up old logs. Check disk usage patterns. Plan storage expansion."
+
+      - alert: HighConnectionCount
+        expr: rabbitmq_connections_total > 800
+        for: 5m
+        labels:
+          tier: "tier2"
+          severity: "warning"
+          operational_impact: "medium"
+          team: "operations"
+        annotations:
+          summary: "High connection count"
+          description: "More than 800 connections to RabbitMQ on {{ $labels.instance }}"
+          operational_impact: "Resource exhaustion possible. Check for connection leaks."
+          action_required: "Investigate connection patterns. Check for connection leaks in applications."
+
+      - alert: QueueDepthThreshold
+        expr: rabbitmq_queue_messages > 5000
+        for: 5m
+        labels:
+          tier: "tier2"
+          severity: "warning"
+          operational_impact: "medium"
+          team: "operations"
+        annotations:
+          summary: "Queue depth threshold exceeded"
+          description: "Queue {{ $labels.queue }} has more than 5,000 messages on {{ $labels.instance }}"
+          operational_impact: "Processing delays. Check consumer health and scaling."
+          action_required: "Check consumer health. Scale consumers if needed. Investigate processing bottlenecks."
+
+      - alert: HighMessageRate
+        expr: rate(rabbitmq_queue_messages_published_total[5m]) > 500
+        for: 5m
+        labels:
+          tier: "tier2"
+          severity: "info"
+          operational_impact: "low"
+          team: "operations"
+        annotations:
+          summary: "High message publishing rate"
+          description: "Message publishing rate is above 500 msg/sec on {{ $labels.instance }}"
+          operational_impact: "Monitor performance. Consider optimization if sustained."
+          action_required: "Monitor system performance. Check for bottlenecks. Consider optimization."
+
+      - alert: HighChannelCount
+        expr: rabbitmq_channels_total > 1500
+        for: 5m
+        labels:
+          tier: "tier2"
+          severity: "warning"
+          operational_impact: "medium"
+          team: "operations"
+        annotations:
+          summary: "High channel count detected"
+          description: "More than 1500 channels on {{ $labels.instance }}"
+          operational_impact: "Memory overhead. Check for channel leaks in applications."
+          action_required: "Investigate channel usage patterns. Check for channel leaks. Monitor memory usage."
+
+      - alert: ConsumerDisconnect
+        expr: rabbitmq_consumers_total < 10
+        for: 2m
+        labels:
+          tier: "tier2"
+          severity: "warning"
+          operational_impact: "medium"
+          team: "operations"
+        annotations:
+          summary: "Low consumer count detected"
+          description: "Consumer count is below 10 on {{ $labels.instance }}"
+          operational_impact: "Message processing may be delayed. Queues may accumulate messages."
+          action_required: "Check consumer applications. Restart failed consumers. Investigate disconnection reasons."
+
+      - alert: HighQueueCount
+        expr: rabbitmq_queues_total > 150
+        for: 5m
+        labels:
+          tier: "tier2"
+          severity: "info"
+          operational_impact: "low"
+          team: "operations"
+        annotations:
+          summary: "High queue count"
+          description: "More than 150 queues on {{ $labels.instance }}"
+          operational_impact: "Resource overhead. Consider queue consolidation."
+          action_required: "Review queue usage. Consider consolidation. Monitor resource usage."
+
+      - alert: HighExchangeCount
+        expr: rabbitmq_exchanges_total > 80
+        for: 5m
+        labels:
+          tier: "tier2"
+          severity: "info"
+          operational_impact: "low"
+          team: "operations"
+        annotations:
+          summary: "High exchange count"
+          description: "More than 80 exchanges on {{ $labels.instance }}"
+          operational_impact: "Configuration complexity. Consider consolidation."
+          action_required: "Review exchange usage. Consider consolidation. Monitor configuration complexity."
+
+      - alert: MessageProcessingDelay
+        expr: rate(rabbitmq_queue_messages_delivered_total[5m]) < rate(rabbitmq_queue_messages_published_total[5m]) * 0.9
+        for: 5m
+        labels:
+          tier: "tier2"
+          severity: "warning"
+          operational_impact: "medium"
+          team: "operations"
+        annotations:
+          summary: "Message processing delay detected"
+          description: "Message delivery rate is lower than publishing rate on {{ $labels.instance }}"
+          operational_impact: "Messages are accumulating. Processing efficiency is reduced."
+          action_required: "Check consumer performance. Scale consumers if needed. Investigate bottlenecks."
+
+      - alert: HighErrorRate
+        expr: rate(rabbitmq_queue_messages_redelivered_total[5m]) > 5
+        for: 5m
+        labels:
+          tier: "tier2"
+          severity: "warning"
+          operational_impact: "medium"
+          team: "operations"
+        annotations:
+          summary: "High message redelivery rate"
+          description: "Message redelivery rate is above 5 msg/sec on {{ $labels.instance }}"
+          operational_impact: "Processing efficiency is reduced. Resource waste."
+          action_required: "Investigate consumer errors. Check application health. Review error handling."
+
+      - alert: ClusterInstability
+        expr: changes(rabbitmq_cluster_members[5m]) > 0
+        for: 2m
+        labels:
+          tier: "tier2"
+          severity: "warning"
+          operational_impact: "medium"
+          team: "operations"
+        annotations:
+          summary: "Cluster membership changes detected"
+          description: "Cluster membership has changed in the last 5 minutes on {{ $labels.instance }}"
+          operational_impact: "Cluster instability. Potential service interruption."
+          action_required: "Check cluster health. Investigate node failures. Monitor cluster stability."
+
+      - alert: NetworkLatency
+        expr: rabbitmq_cluster_links < 3
+        for: 3m
+        labels:
+          tier: "tier2"
+          severity: "warning"
+          operational_impact: "medium"
+          team: "operations"
+        annotations:
+          summary: "Cluster network connectivity issues"
+          description: "Fewer than 3 cluster links on {{ $labels.instance }}"
+          operational_impact: "Cluster communication degraded. Risk of partition."
+          action_required: "Check network connectivity. Restart network services if needed. Monitor cluster health."

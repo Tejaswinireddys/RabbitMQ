@@ -1,0 +1,114 @@
+groups:
+  - name: tier1_business_alerts
+    rules:
+      - alert: RabbitMQServiceDown
+        expr: up{job="rabbitmq-core"} == 0
+        for: 2m
+        labels:
+          tier: "tier1"
+          severity: "critical"
+          business_impact: "high"
+          team: "executive"
+        annotations:
+          summary: "RabbitMQ service is down - Business Impact"
+          description: "RabbitMQ messaging service is unavailable. This affects all dependent applications and business processes."
+          business_impact: "All message processing stopped. Customer-facing services may be affected."
+          action_required: "Immediate escalation to infrastructure team. Check all dependent services."
+
+      - alert: ClusterUnavailable
+        expr: rabbitmq_cluster_members < 3
+        for: 3m
+        labels:
+          tier: "tier1"
+          severity: "critical"
+          business_impact: "high"
+          team: "executive"
+        annotations:
+          summary: "RabbitMQ cluster is degraded - Business Impact"
+          description: "RabbitMQ cluster has fewer than 3 nodes. High availability is compromised."
+          business_impact: "Risk of service interruption. Message processing may be delayed."
+          action_required: "Check cluster health. Restart failed nodes if possible."
+
+      - alert: HighQueueBacklog
+        expr: sum(rabbitmq_queue_messages) > 100000
+        for: 5m
+        labels:
+          tier: "tier1"
+          severity: "warning"
+          business_impact: "medium"
+          team: "executive"
+        annotations:
+          summary: "High message backlog - Business Impact"
+          description: "Total messages in queues exceed 100,000. This may indicate processing delays."
+          business_impact: "Customer requests may be delayed. Consider scaling up consumers."
+          action_required: "Monitor queue depths. Scale consumers if backlog persists."
+
+      - alert: ServiceDegradation
+        expr: rate(rabbitmq_queue_messages_delivered_total[5m]) < rate(rabbitmq_queue_messages_published_total[5m]) * 0.8
+        for: 10m
+        labels:
+          tier: "tier1"
+          severity: "warning"
+          business_impact: "medium"
+          team: "executive"
+        annotations:
+          summary: "Service degradation detected - Business Impact"
+          description: "Message delivery rate is significantly lower than publishing rate."
+          business_impact: "Messages are accumulating faster than they can be processed."
+          action_required: "Investigate consumer performance. Check for bottlenecks."
+
+      - alert: HighErrorRate
+        expr: rate(rabbitmq_queue_messages_redelivered_total[5m]) > rate(rabbitmq_queue_messages_delivered_total[5m]) * 0.1
+        for: 5m
+        labels:
+          tier: "tier1"
+          severity: "warning"
+          business_impact: "medium"
+          team: "executive"
+        annotations:
+          summary: "High error rate detected - Business Impact"
+          description: "Message redelivery rate is more than 10% of delivery rate."
+          business_impact: "Processing efficiency is reduced. Customer experience may be affected."
+          action_required: "Investigate consumer errors. Check application health."
+
+      - alert: CapacityExceeded
+        expr: rabbitmq_connections_total > 1500
+        for: 5m
+        labels:
+          tier: "tier1"
+          severity: "warning"
+          business_impact: "medium"
+          team: "executive"
+        annotations:
+          summary: "Capacity limits approaching - Business Impact"
+          description: "Connection count exceeds 1500. System may be approaching capacity limits."
+          business_impact: "New connections may be rejected. Service availability at risk."
+          action_required: "Monitor connection trends. Plan for capacity increase if needed."
+
+      - alert: CriticalQueueOverflow
+        expr: max(rabbitmq_queue_messages) > 50000
+        for: 3m
+        labels:
+          tier: "tier1"
+          severity: "critical"
+          business_impact: "high"
+          team: "executive"
+        annotations:
+          summary: "Critical queue overflow - Business Impact"
+          description: "Individual queue has more than 50,000 messages. Processing is severely delayed."
+          business_impact: "Specific business process is blocked. Customer impact is high."
+          action_required: "Immediate investigation. Scale consumers or restart if necessary."
+
+      - alert: ClusterPartitionRisk
+        expr: rabbitmq_cluster_links < 2
+        for: 2m
+        labels:
+          tier: "tier1"
+          severity: "critical"
+          business_impact: "high"
+          team: "executive"
+        annotations:
+          summary: "Cluster partition risk - Business Impact"
+          description: "Cluster network connectivity is degraded. Risk of split-brain scenario."
+          business_impact: "Data consistency at risk. Service interruption possible."
+          action_required: "Check network connectivity. Restart cluster if necessary."

@@ -1,0 +1,30 @@
+[Unit]
+Description=RabbitMQ Cluster Monitor and Auto-Recovery Service
+After=rabbitmq-server.service
+Wants=rabbitmq-server.service
+PartOf=rabbitmq-server.service
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+ExecStart=/usr/local/bin/rabbitmq-monitor.sh
+ExecReload=/usr/local/bin/rabbitmq-monitor.sh
+RemainAfterExit=yes
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=rabbitmq-monitor
+
+# Environment variables
+Environment=RABBITMQ_ENVIRONMENT=production
+Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/log/rabbitmq /tmp /backup/rabbitmq
+
+[Install]
+WantedBy=multi-user.target
