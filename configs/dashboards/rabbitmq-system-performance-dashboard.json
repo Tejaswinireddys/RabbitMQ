@@ -1,0 +1,532 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "RabbitMQ - System Performance Dashboard",
+    "tags": ["rabbitmq", "system", "performance", "resources"],
+    "style": "dark",
+    "timezone": "browser",
+    "refresh": "30s",
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Memory Usage",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "rabbitmq_node_mem_used / rabbitmq_node_mem_limit * 100",
+            "legendFormat": "Memory Usage %",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette"},
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "linear",
+              "barAlignment": 0,
+              "lineWidth": 2,
+              "fillOpacity": 10,
+              "gradientMode": "none",
+              "spanNulls": false,
+              "showPoints": "never",
+              "pointSize": 5,
+              "stacking": {"mode": "none", "group": "A"},
+              "axisLabel": "Memory %",
+              "scaleDistribution": {"type": "linear"},
+              "hideFrom": {"legend": false, "tooltip": false, "vis": false},
+              "thresholdsStyle": {"mode": "off"}
+            },
+            "unit": "percent",
+            "min": 0,
+            "max": 100
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+        "options": {
+          "legend": {
+            "calcs": ["last", "max", "mean"],
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "single",
+            "sort": "none"
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "Disk Usage",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "rabbitmq_node_disk_free / rabbitmq_node_disk_free_limit * 100",
+            "legendFormat": "Disk Free %",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette"},
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "linear",
+              "barAlignment": 0,
+              "lineWidth": 2,
+              "fillOpacity": 10,
+              "gradientMode": "none",
+              "spanNulls": false,
+              "showPoints": "never",
+              "pointSize": 5,
+              "stacking": {"mode": "none", "group": "A"},
+              "axisLabel": "Disk Free %",
+              "scaleDistribution": {"type": "linear"},
+              "hideFrom": {"legend": false, "tooltip": false, "vis": false},
+              "thresholdsStyle": {"mode": "off"}
+            },
+            "unit": "percent",
+            "min": 0,
+            "max": 100
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+        "options": {
+          "legend": {
+            "calcs": ["last", "max", "mean"],
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "single",
+            "sort": "none"
+          }
+        }
+      },
+      {
+        "id": 3,
+        "title": "Erlang Process Count",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "rabbitmq_node_processes",
+            "legendFormat": "Erlang Processes",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette"},
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "linear",
+              "barAlignment": 0,
+              "lineWidth": 2,
+              "fillOpacity": 10,
+              "gradientMode": "none",
+              "spanNulls": false,
+              "showPoints": "never",
+              "pointSize": 5,
+              "stacking": {"mode": "none", "group": "A"},
+              "axisLabel": "Processes",
+              "scaleDistribution": {"type": "linear"},
+              "hideFrom": {"legend": false, "tooltip": false, "vis": false},
+              "thresholdsStyle": {"mode": "off"}
+            },
+            "unit": "short"
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+        "options": {
+          "legend": {
+            "calcs": ["last", "max", "mean"],
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "single",
+            "sort": "none"
+          }
+        }
+      },
+      {
+        "id": 4,
+        "title": "File Descriptor Usage",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "rabbitmq_node_fd_used / rabbitmq_node_fd_total * 100",
+            "legendFormat": "FD Usage %",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette"},
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "linear",
+              "barAlignment": 0,
+              "lineWidth": 2,
+              "fillOpacity": 10,
+              "gradientMode": "none",
+              "spanNulls": false,
+              "showPoints": "never",
+              "pointSize": 5,
+              "stacking": {"mode": "none", "group": "A"},
+              "axisLabel": "FD Usage %",
+              "scaleDistribution": {"type": "linear"},
+              "hideFrom": {"legend": false, "tooltip": false, "vis": false},
+              "thresholdsStyle": {"mode": "off"}
+            },
+            "unit": "percent",
+            "min": 0,
+            "max": 100
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+        "options": {
+          "legend": {
+            "calcs": ["last", "max", "mean"],
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "single",
+            "sort": "none"
+          }
+        }
+      },
+      {
+        "id": 5,
+        "title": "Memory Breakdown",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "rabbitmq_node_mem_used",
+            "legendFormat": "Used Memory",
+            "refId": "A"
+          },
+          {
+            "expr": "rabbitmq_node_mem_limit - rabbitmq_node_mem_used",
+            "legendFormat": "Available Memory",
+            "refId": "B"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette"},
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "linear",
+              "barAlignment": 0,
+              "lineWidth": 2,
+              "fillOpacity": 10,
+              "gradientMode": "none",
+              "spanNulls": false,
+              "showPoints": "never",
+              "pointSize": 5,
+              "stacking": {"mode": "normal", "group": "A"},
+              "axisLabel": "Memory (bytes)",
+              "scaleDistribution": {"type": "linear"},
+              "hideFrom": {"legend": false, "tooltip": false, "vis": false},
+              "thresholdsStyle": {"mode": "off"}
+            },
+            "unit": "bytes"
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+        "options": {
+          "legend": {
+            "calcs": ["last", "max", "mean"],
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "single",
+            "sort": "none"
+          }
+        }
+      },
+      {
+        "id": 6,
+        "title": "Disk Space Breakdown",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "rabbitmq_node_disk_free_limit - rabbitmq_node_disk_free",
+            "legendFormat": "Used Disk",
+            "refId": "A"
+          },
+          {
+            "expr": "rabbitmq_node_disk_free",
+            "legendFormat": "Free Disk",
+            "refId": "B"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette"},
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "linear",
+              "barAlignment": 0,
+              "lineWidth": 2,
+              "fillOpacity": 10,
+              "gradientMode": "none",
+              "spanNulls": false,
+              "showPoints": "never",
+              "pointSize": 5,
+              "stacking": {"mode": "normal", "group": "A"},
+              "axisLabel": "Disk Space (bytes)",
+              "scaleDistribution": {"type": "linear"},
+              "hideFrom": {"legend": false, "tooltip": false, "vis": false},
+              "thresholdsStyle": {"mode": "off"}
+            },
+            "unit": "bytes"
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
+        "options": {
+          "legend": {
+            "calcs": ["last", "max", "mean"],
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "single",
+            "sort": "none"
+          }
+        }
+      },
+      {
+        "id": 7,
+        "title": "System Resource Alerts",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "rabbitmq_node_mem_used / rabbitmq_node_mem_limit * 100",
+            "legendFormat": "Memory Usage %",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": 0},
+                {"color": "yellow", "value": 70},
+                {"color": "orange", "value": 85},
+                {"color": "red", "value": 95}
+              ]
+            },
+            "unit": "percent",
+            "min": 0,
+            "max": 100
+          }
+        },
+        "gridPos": {"h": 4, "w": 6, "x": 0, "y": 24},
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": ["lastNotNull"],
+            "fields": "",
+            "values": false
+          },
+          "textMode": "auto"
+        }
+      },
+      {
+        "id": 8,
+        "title": "Disk Space Alert",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "rabbitmq_node_disk_free / rabbitmq_node_disk_free_limit * 100",
+            "legendFormat": "Disk Free %",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "orange", "value": 10},
+                {"color": "yellow", "value": 20},
+                {"color": "green", "value": 30}
+              ]
+            },
+            "unit": "percent",
+            "min": 0,
+            "max": 100
+          }
+        },
+        "gridPos": {"h": 4, "w": 6, "x": 6, "y": 24},
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": ["lastNotNull"],
+            "fields": "",
+            "values": false
+          },
+          "textMode": "auto"
+        }
+      },
+      {
+        "id": 9,
+        "title": "Process Count Alert",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "rabbitmq_node_processes",
+            "legendFormat": "Process Count",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": 0},
+                {"color": "yellow", "value": 10000},
+                {"color": "orange", "value": 20000},
+                {"color": "red", "value": 50000}
+              ]
+            },
+            "unit": "short",
+            "min": 0
+          }
+        },
+        "gridPos": {"h": 4, "w": 6, "x": 12, "y": 24},
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": ["lastNotNull"],
+            "fields": "",
+            "values": false
+          },
+          "textMode": "auto"
+        }
+      },
+      {
+        "id": 10,
+        "title": "File Descriptor Alert",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "rabbitmq_node_fd_used / rabbitmq_node_fd_total * 100",
+            "legendFormat": "FD Usage %",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": 0},
+                {"color": "yellow", "value": 70},
+                {"color": "orange", "value": 85},
+                {"color": "red", "value": 95}
+              ]
+            },
+            "unit": "percent",
+            "min": 0,
+            "max": 100
+          }
+        },
+        "gridPos": {"h": 4, "w": 6, "x": 18, "y": 24},
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": ["lastNotNull"],
+            "fields": "",
+            "values": false
+          },
+          "textMode": "auto"
+        }
+      },
+      {
+        "id": 11,
+        "title": "System Performance Summary",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "rabbitmq_node_mem_used / rabbitmq_node_mem_limit * 100",
+            "format": "table",
+            "instant": true,
+            "refId": "A"
+          },
+          {
+            "expr": "rabbitmq_node_disk_free / rabbitmq_node_disk_free_limit * 100",
+            "format": "table",
+            "instant": true,
+            "refId": "B"
+          },
+          {
+            "expr": "rabbitmq_node_processes",
+            "format": "table",
+            "instant": true,
+            "refId": "C"
+          },
+          {
+            "expr": "rabbitmq_node_fd_used / rabbitmq_node_fd_total * 100",
+            "format": "table",
+            "instant": true,
+            "refId": "D"
+          },
+          {
+            "expr": "rabbitmq_node_mem_used",
+            "format": "table",
+            "instant": true,
+            "refId": "E"
+          },
+          {
+            "expr": "rabbitmq_node_disk_free",
+            "format": "table",
+            "instant": true,
+            "refId": "F"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "align": "auto",
+              "displayMode": "auto"
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 28},
+        "options": {
+          "showHeader": true,
+          "sortBy": [
+            {
+              "desc": true,
+              "displayName": "Memory Usage %"
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

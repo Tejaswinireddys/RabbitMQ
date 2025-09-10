@@ -1,0 +1,478 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "RabbitMQ - Message Flow & Throughput Dashboard",
+    "tags": ["rabbitmq", "messages", "throughput", "flow"],
+    "style": "dark",
+    "timezone": "browser",
+    "refresh": "30s",
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Total Message Throughput",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "rate(rabbitmq_queue_messages_published_total[1m])",
+            "legendFormat": "Published/sec",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(rabbitmq_queue_messages_delivered_total[1m])",
+            "legendFormat": "Delivered/sec",
+            "refId": "B"
+          },
+          {
+            "expr": "rate(rabbitmq_queue_messages_ack_total[1m])",
+            "legendFormat": "Acknowledged/sec",
+            "refId": "C"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette"},
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "linear",
+              "barAlignment": 0,
+              "lineWidth": 2,
+              "fillOpacity": 10,
+              "gradientMode": "none",
+              "spanNulls": false,
+              "showPoints": "never",
+              "pointSize": 5,
+              "stacking": {"mode": "none", "group": "A"},
+              "axisLabel": "Messages/sec",
+              "scaleDistribution": {"type": "linear"},
+              "hideFrom": {"legend": false, "tooltip": false, "vis": false},
+              "thresholdsStyle": {"mode": "off"}
+            },
+            "unit": "msgps"
+          }
+        },
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 0},
+        "options": {
+          "legend": {
+            "calcs": ["last", "max", "mean"],
+            "displayMode": "table",
+            "placement": "right"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "Message Processing Pipeline",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "rate(rabbitmq_queue_messages_published_total[1m])",
+            "legendFormat": "Published",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(rabbitmq_queue_messages_delivered_total[1m])",
+            "legendFormat": "Delivered",
+            "refId": "B"
+          },
+          {
+            "expr": "rate(rabbitmq_queue_messages_ack_total[1m])",
+            "legendFormat": "Acknowledged",
+            "refId": "C"
+          },
+          {
+            "expr": "rate(rabbitmq_queue_messages_redelivered_total[1m])",
+            "legendFormat": "Redelivered",
+            "refId": "D"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette"},
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "linear",
+              "barAlignment": 0,
+              "lineWidth": 2,
+              "fillOpacity": 10,
+              "gradientMode": "none",
+              "spanNulls": false,
+              "showPoints": "never",
+              "pointSize": 5,
+              "stacking": {"mode": "none", "group": "A"},
+              "axisLabel": "Messages/sec",
+              "scaleDistribution": {"type": "linear"},
+              "hideFrom": {"legend": false, "tooltip": false, "vis": false},
+              "thresholdsStyle": {"mode": "off"}
+            },
+            "unit": "msgps"
+          }
+        },
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 8},
+        "options": {
+          "legend": {
+            "calcs": ["last", "max", "mean"],
+            "displayMode": "table",
+            "placement": "right"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        }
+      },
+      {
+        "id": 3,
+        "title": "Processing Efficiency",
+        "type": "gauge",
+        "targets": [
+          {
+            "expr": "rate(rabbitmq_queue_messages_delivered_total[1m]) / rate(rabbitmq_queue_messages_published_total[1m]) * 100",
+            "legendFormat": "Delivery Efficiency %",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "yellow", "value": 80},
+                {"color": "green", "value": 95}
+              ]
+            },
+            "unit": "percent",
+            "min": 0,
+            "max": 100
+          }
+        },
+        "gridPos": {"h": 8, "w": 6, "x": 0, "y": 16},
+        "options": {
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": ["lastNotNull"],
+            "fields": "",
+            "values": false
+          },
+          "showThresholdLabels": false,
+          "showThresholdMarkers": true
+        }
+      },
+      {
+        "id": 4,
+        "title": "Acknowledgment Rate",
+        "type": "gauge",
+        "targets": [
+          {
+            "expr": "rate(rabbitmq_queue_messages_ack_total[1m]) / rate(rabbitmq_queue_messages_delivered_total[1m]) * 100",
+            "legendFormat": "Ack Rate %",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "yellow", "value": 90},
+                {"color": "green", "value": 98}
+              ]
+            },
+            "unit": "percent",
+            "min": 0,
+            "max": 100
+          }
+        },
+        "gridPos": {"h": 8, "w": 6, "x": 6, "y": 16},
+        "options": {
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": ["lastNotNull"],
+            "fields": "",
+            "values": false
+          },
+          "showThresholdLabels": false,
+          "showThresholdMarkers": true
+        }
+      },
+      {
+        "id": 5,
+        "title": "Error Rate",
+        "type": "gauge",
+        "targets": [
+          {
+            "expr": "rate(rabbitmq_queue_messages_redelivered_total[1m]) / rate(rabbitmq_queue_messages_delivered_total[1m]) * 100",
+            "legendFormat": "Error Rate %",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": 0},
+                {"color": "yellow", "value": 2},
+                {"color": "red", "value": 5}
+              ]
+            },
+            "unit": "percent",
+            "min": 0,
+            "max": 100
+          }
+        },
+        "gridPos": {"h": 8, "w": 6, "x": 12, "y": 16},
+        "options": {
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": ["lastNotNull"],
+            "fields": "",
+            "values": false
+          },
+          "showThresholdLabels": false,
+          "showThresholdMarkers": true
+        }
+      },
+      {
+        "id": 6,
+        "title": "Message Backlog",
+        "type": "gauge",
+        "targets": [
+          {
+            "expr": "sum(rabbitmq_queue_messages)",
+            "legendFormat": "Total Messages in Queues",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": 0},
+                {"color": "yellow", "value": 10000},
+                {"color": "orange", "value": 50000},
+                {"color": "red", "value": 100000}
+              ]
+            },
+            "unit": "short",
+            "min": 0
+          }
+        },
+        "gridPos": {"h": 8, "w": 6, "x": 18, "y": 16},
+        "options": {
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": ["lastNotNull"],
+            "fields": "",
+            "values": false
+          },
+          "showThresholdLabels": false,
+          "showThresholdMarkers": true
+        }
+      },
+      {
+        "id": 7,
+        "title": "Message Flow by Queue",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "rate(rabbitmq_queue_messages_published_total[1m])",
+            "legendFormat": "{{queue}} - Published",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette"},
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "linear",
+              "barAlignment": 0,
+              "lineWidth": 2,
+              "fillOpacity": 10,
+              "gradientMode": "none",
+              "spanNulls": false,
+              "showPoints": "never",
+              "pointSize": 5,
+              "stacking": {"mode": "none", "group": "A"},
+              "axisLabel": "Messages/sec",
+              "scaleDistribution": {"type": "linear"},
+              "hideFrom": {"legend": false, "tooltip": false, "vis": false},
+              "thresholdsStyle": {"mode": "off"}
+            },
+            "unit": "msgps"
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24},
+        "options": {
+          "legend": {
+            "calcs": ["last", "max", "mean"],
+            "displayMode": "table",
+            "placement": "right"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        }
+      },
+      {
+        "id": 8,
+        "title": "Message Consumption by Queue",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "rate(rabbitmq_queue_messages_delivered_total[1m])",
+            "legendFormat": "{{queue}} - Delivered",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette"},
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "linear",
+              "barAlignment": 0,
+              "lineWidth": 2,
+              "fillOpacity": 10,
+              "gradientMode": "none",
+              "spanNulls": false,
+              "showPoints": "never",
+              "pointSize": 5,
+              "stacking": {"mode": "none", "group": "A"},
+              "axisLabel": "Messages/sec",
+              "scaleDistribution": {"type": "linear"},
+              "hideFrom": {"legend": false, "tooltip": false, "vis": false},
+              "thresholdsStyle": {"mode": "off"}
+            },
+            "unit": "msgps"
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 24},
+        "options": {
+          "legend": {
+            "calcs": ["last", "max", "mean"],
+            "displayMode": "table",
+            "placement": "right"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        }
+      },
+      {
+        "id": 9,
+        "title": "Message Processing Latency",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "rabbitmq_queue_messages / rate(rabbitmq_queue_messages_delivered_total[1m])",
+            "legendFormat": "{{queue}} - Processing Time (sec)",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette"},
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "linear",
+              "barAlignment": 0,
+              "lineWidth": 2,
+              "fillOpacity": 10,
+              "gradientMode": "none",
+              "spanNulls": false,
+              "showPoints": "never",
+              "pointSize": 5,
+              "stacking": {"mode": "none", "group": "A"},
+              "axisLabel": "Seconds",
+              "scaleDistribution": {"type": "linear"},
+              "hideFrom": {"legend": false, "tooltip": false, "vis": false},
+              "thresholdsStyle": {"mode": "off"}
+            },
+            "unit": "s"
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 32},
+        "options": {
+          "legend": {
+            "calcs": ["last", "max", "mean"],
+            "displayMode": "table",
+            "placement": "right"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        }
+      },
+      {
+        "id": 10,
+        "title": "Message Throughput Summary",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "rate(rabbitmq_queue_messages_published_total[5m])",
+            "format": "table",
+            "instant": true,
+            "refId": "A"
+          },
+          {
+            "expr": "rate(rabbitmq_queue_messages_delivered_total[5m])",
+            "format": "table",
+            "instant": true,
+            "refId": "B"
+          },
+          {
+            "expr": "rate(rabbitmq_queue_messages_ack_total[5m])",
+            "format": "table",
+            "instant": true,
+            "refId": "C"
+          },
+          {
+            "expr": "rate(rabbitmq_queue_messages_redelivered_total[5m])",
+            "format": "table",
+            "instant": true,
+            "refId": "D"
+          },
+          {
+            "expr": "rabbitmq_queue_messages",
+            "format": "table",
+            "instant": true,
+            "refId": "E"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "align": "auto",
+              "displayMode": "auto"
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 32},
+        "options": {
+          "showHeader": true,
+          "sortBy": [
+            {
+              "desc": true,
+              "displayName": "Published/sec"
+            }
+          ]
+        }
+      }
+    ]
+  }
+}
