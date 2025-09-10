@@ -1,0 +1,750 @@
+# RabbitMQ AI/ML Operations - EC2 RHEL8 Security Configuration
+# This configuration file contains all security settings for the EC2 RHEL8 deployment
+
+# IAM Roles and Policies
+iam:
+  # RabbitMQ Instance Role
+  rabbitmq_role:
+    name: "RabbitMQ-AIML-InstanceRole"
+    policies:
+      - "CloudWatchLogsFullAccess"
+      - "EC2InstanceProfileForImageBuilder"
+      - "SSMManagedInstanceCore"
+      - "S3ReadOnlyAccess"
+    trust_policy:
+      Version: "2012-10-17"
+      Statement:
+        - Effect: "Allow"
+          Principal:
+            Service: "ec2.amazonaws.com"
+          Action: "sts:AssumeRole"
+
+  # Kubernetes Instance Role
+  kubernetes_role:
+    name: "Kubernetes-AIML-InstanceRole"
+    policies:
+      - "EKSWorkerNodePolicy"
+      - "EKS_CNI_Policy"
+      - "EC2ContainerRegistryReadOnly"
+      - "CloudWatchLogsFullAccess"
+      - "S3FullAccess"
+    trust_policy:
+      Version: "2012-10-17"
+      Statement:
+        - Effect: "Allow"
+          Principal:
+            Service: "ec2.amazonaws.com"
+          Action: "sts:AssumeRole"
+
+  # Monitoring Instance Role
+  monitoring_role:
+    name: "Monitoring-AIML-InstanceRole"
+    policies:
+      - "CloudWatchFullAccess"
+      - "S3FullAccess"
+      - "RDSFullAccess"
+      - "EC2ReadOnlyAccess"
+    trust_policy:
+      Version: "2012-10-17"
+      Statement:
+        - Effect: "Allow"
+          Principal:
+            Service: "ec2.amazonaws.com"
+          Action: "sts:AssumeRole"
+
+# Security Groups Configuration
+security_groups:
+  # RabbitMQ Security Group
+  rabbitmq_sg:
+    name: "rabbitmq-sg"
+    description: "RabbitMQ Cluster Security Group"
+    rules:
+      ingress:
+        - protocol: "tcp"
+          port: 5672
+          source: "10.0.0.0/16"
+          description: "RabbitMQ AMQP"
+        - protocol: "tcp"
+          port: 15672
+          source: "10.0.0.0/16"
+          description: "RabbitMQ Management"
+        - protocol: "tcp"
+          port: 25672
+          source: "10.0.0.0/16"
+          description: "RabbitMQ Clustering"
+        - protocol: "tcp"
+          port: 4369
+          source: "10.0.0.0/16"
+          description: "RabbitMQ EPMD"
+        - protocol: "tcp"
+          port: 15692
+          source: "10.0.0.0/16"
+          description: "RabbitMQ Prometheus Metrics"
+        - protocol: "tcp"
+          port: 9100
+          source: "10.0.0.0/16"
+          description: "Node Exporter"
+      egress:
+        - protocol: "-1"
+          port: 0
+          destination: "0.0.0.0/0"
+          description: "All outbound traffic"
+
+  # Monitoring Security Group
+  monitoring_sg:
+    name: "monitoring-sg"
+    description: "Monitoring Stack Security Group"
+    rules:
+      ingress:
+        - protocol: "tcp"
+          port: 9090
+          source: "10.0.0.0/16"
+          description: "Prometheus"
+        - protocol: "tcp"
+          port: 3000
+          source: "10.0.0.0/16"
+          description: "Grafana"
+        - protocol: "tcp"
+          port: 8086
+          source: "10.0.0.0/16"
+          description: "InfluxDB"
+        - protocol: "tcp"
+          port: 9200
+          source: "10.0.0.0/16"
+          description: "Elasticsearch"
+        - protocol: "tcp"
+          port: 9100
+          source: "10.0.0.0/16"
+          description: "Node Exporter"
+      egress:
+        - protocol: "-1"
+          port: 0
+          destination: "0.0.0.0/0"
+          description: "All outbound traffic"
+
+  # Kubernetes Security Group
+  kubernetes_sg:
+    name: "kubernetes-sg"
+    description: "Kubernetes Cluster Security Group"
+    rules:
+      ingress:
+        - protocol: "tcp"
+          port: 6443
+          source: "10.0.0.0/16"
+          description: "Kubernetes API Server"
+        - protocol: "tcp"
+          port: 2379-2380
+          source: "10.0.0.0/16"
+          description: "etcd"
+        - protocol: "tcp"
+          port: 10250
+          source: "10.0.0.0/16"
+          description: "kubelet"
+        - protocol: "tcp"
+          port: 10251
+          source: "10.0.0.0/16"
+          description: "kube-scheduler"
+        - protocol: "tcp"
+          port: 10252
+          source: "10.0.0.0/16"
+          description: "kube-controller-manager"
+        - protocol: "tcp"
+          port: 30000-32767
+          source: "10.0.0.0/16"
+          description: "NodePort Services"
+      egress:
+        - protocol: "-1"
+          port: 0
+          destination: "0.0.0.0/0"
+          description: "All outbound traffic"
+
+  # Bastion Security Group
+  bastion_sg:
+    name: "bastion-sg"
+    description: "Bastion Host Security Group"
+    rules:
+      ingress:
+        - protocol: "tcp"
+          port: 22
+          source: "0.0.0.0/0"
+          description: "SSH Access"
+      egress:
+        - protocol: "-1"
+          port: 0
+          destination: "0.0.0.0/0"
+          description: "All outbound traffic"
+
+# Network ACLs
+network_acls:
+  # Public Subnet NACL
+  public_nacl:
+    name: "rabbitmq-aiml-public-nacl"
+    rules:
+      ingress:
+        - rule_number: 100
+          protocol: "tcp"
+          port_range: "22"
+          source: "0.0.0.0/0"
+          action: "allow"
+          description: "SSH from anywhere"
+        - rule_number: 200
+          protocol: "tcp"
+          port_range: "80"
+          source: "0.0.0.0/0"
+          action: "allow"
+          description: "HTTP from anywhere"
+        - rule_number: 300
+          protocol: "tcp"
+          port_range: "443"
+          source: "0.0.0.0/0"
+          action: "allow"
+          description: "HTTPS from anywhere"
+        - rule_number: 32767
+          protocol: "-1"
+          port_range: "0-65535"
+          source: "0.0.0.0/0"
+          action: "deny"
+          description: "Deny all other traffic"
+      egress:
+        - rule_number: 100
+          protocol: "-1"
+          port_range: "0-65535"
+          destination: "0.0.0.0/0"
+          action: "allow"
+          description: "Allow all outbound traffic"
+
+  # Private Subnet NACL
+  private_nacl:
+    name: "rabbitmq-aiml-private-nacl"
+    rules:
+      ingress:
+        - rule_number: 100
+          protocol: "tcp"
+          port_range: "0-65535"
+          source: "10.0.0.0/16"
+          action: "allow"
+          description: "Allow all traffic from VPC"
+        - rule_number: 200
+          protocol: "tcp"
+          port_range: "1024-65535"
+          source: "0.0.0.0/0"
+          action: "allow"
+          description: "Ephemeral ports"
+        - rule_number: 32767
+          protocol: "-1"
+          port_range: "0-65535"
+          source: "0.0.0.0/0"
+          action: "deny"
+          description: "Deny all other traffic"
+      egress:
+        - rule_number: 100
+          protocol: "-1"
+          port_range: "0-65535"
+          destination: "0.0.0.0/0"
+          action: "allow"
+          description: "Allow all outbound traffic"
+
+# SSL/TLS Configuration
+ssl_tls:
+  # Certificate Authority
+  ca:
+    name: "RabbitMQ-AIML-CA"
+    validity_days: 3650
+    key_size: 4096
+    algorithm: "RSA"
+    
+  # Server Certificates
+  server_certs:
+    rabbitmq:
+      name: "rabbitmq-server"
+      validity_days: 365
+      key_size: 2048
+      algorithm: "RSA"
+      san:
+        - "rabbitmq-node-1.internal"
+        - "rabbitmq-node-2.internal"
+        - "rabbitmq-node-3.internal"
+        - "*.rabbitmq.internal"
+        
+    monitoring:
+      name: "monitoring-server"
+      validity_days: 365
+      key_size: 2048
+      algorithm: "RSA"
+      san:
+        - "monitoring-node-1.internal"
+        - "monitoring-node-2.internal"
+        - "monitoring-node-3.internal"
+        - "*.monitoring.internal"
+        
+    kubernetes:
+      name: "kubernetes-server"
+      validity_days: 365
+      key_size: 2048
+      algorithm: "RSA"
+      san:
+        - "k8s-node-1.internal"
+        - "k8s-node-2.internal"
+        - "k8s-node-3.internal"
+        - "*.k8s.internal"
+
+  # TLS Configuration
+  tls_config:
+    min_version: "TLSv1.2"
+    max_version: "TLSv1.3"
+    cipher_suites:
+      - "TLS_AES_256_GCM_SHA384"
+      - "TLS_CHACHA20_POLY1305_SHA256"
+      - "TLS_AES_128_GCM_SHA256"
+      - "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384"
+      - "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256"
+      - "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"
+    prefer_server_cipher_suites: true
+    session_tickets: false
+    session_timeout: 300
+
+# Encryption Configuration
+encryption:
+  # Data at Rest
+  data_at_rest:
+    ebs_volumes:
+      enabled: true
+      algorithm: "AES-256"
+      key_source: "AWS_KMS"
+      key_id: "alias/rabbitmq-aiml-ebs"
+      
+    efs_filesystem:
+      enabled: true
+      algorithm: "AES-256"
+      key_source: "AWS_KMS"
+      key_id: "alias/rabbitmq-aiml-efs"
+      
+    rds_database:
+      enabled: true
+      algorithm: "AES-256"
+      key_source: "AWS_KMS"
+      key_id: "alias/rabbitmq-aiml-rds"
+      
+    s3_bucket:
+      enabled: true
+      algorithm: "AES-256"
+      key_source: "AWS_KMS"
+      key_id: "alias/rabbitmq-aiml-s3"
+
+  # Data in Transit
+  data_in_transit:
+    rabbitmq:
+      enabled: true
+      tls_version: "TLSv1.2+"
+      cipher_suites: "HIGH:!aNULL:!eNULL"
+      
+    kubernetes:
+      enabled: true
+      tls_version: "TLSv1.2+"
+      cipher_suites: "HIGH:!aNULL:!eNULL"
+      
+    monitoring:
+      enabled: true
+      tls_version: "TLSv1.2+"
+      cipher_suites: "HIGH:!aNULL:!eNULL"
+
+# Authentication Configuration
+authentication:
+  # LDAP Configuration
+  ldap:
+    enabled: true
+    server: "ldap://ldap.company.com:389"
+    base_dn: "ou=users,dc=company,dc=com"
+    user_dn: "cn=admin,dc=company,dc=com"
+    password: "ldap_password"
+    user_search_filter: "(uid={username})"
+    group_search_filter: "(member={user_dn})"
+    group_search_base: "ou=groups,dc=company,dc=com"
+    
+  # OAuth2 Configuration
+  oauth2:
+    enabled: false
+    provider: "google"
+    client_id: "your_client_id"
+    client_secret: "your_client_secret"
+    redirect_url: "https://rabbitmq.company.com/auth/callback"
+    scopes: ["openid", "profile", "email"]
+    
+  # SAML Configuration
+  saml:
+    enabled: false
+    entity_id: "https://rabbitmq.company.com"
+    sso_url: "https://sso.company.com/saml/sso"
+    certificate: "/etc/ssl/certs/saml.crt"
+    private_key: "/etc/ssl/private/saml.key"
+
+# Authorization Configuration
+authorization:
+  # Role-Based Access Control (RBAC)
+  rbac:
+    enabled: true
+    roles:
+      admin:
+        permissions:
+          - "rabbitmq:admin"
+          - "monitoring:admin"
+          - "kubernetes:admin"
+        users: ["admin", "root"]
+        
+      operator:
+        permissions:
+          - "rabbitmq:read"
+          - "rabbitmq:write"
+          - "monitoring:read"
+          - "kubernetes:read"
+        users: ["operator1", "operator2"]
+        
+      monitor:
+        permissions:
+          - "rabbitmq:read"
+          - "monitoring:read"
+        users: ["monitor1", "monitor2"]
+        
+      developer:
+        permissions:
+          - "rabbitmq:read"
+          - "kubernetes:read"
+        users: ["dev1", "dev2"]
+
+  # Attribute-Based Access Control (ABAC)
+  abac:
+    enabled: false
+    policies:
+      - name: "admin-policy"
+        subjects: ["admin", "root"]
+        resources: ["*"]
+        actions: ["*"]
+        conditions:
+          - attribute: "time"
+            operator: "in_range"
+            value: "09:00-17:00"
+            
+      - name: "operator-policy"
+        subjects: ["operator*"]
+        resources: ["rabbitmq:*", "monitoring:*"]
+        actions: ["read", "write"]
+        conditions: []
+
+# Network Security
+network_security:
+  # VPC Configuration
+  vpc:
+    cidr: "10.0.0.0/16"
+    enable_dns_hostnames: true
+    enable_dns_support: true
+    
+  # Subnet Configuration
+  subnets:
+    public:
+      cidr: "10.0.1.0/24"
+      availability_zone: "us-east-1a"
+      map_public_ip_on_launch: true
+      
+    private_a:
+      cidr: "10.0.2.0/24"
+      availability_zone: "us-east-1a"
+      map_public_ip_on_launch: false
+      
+    private_b:
+      cidr: "10.0.3.0/24"
+      availability_zone: "us-east-1b"
+      map_public_ip_on_launch: false
+      
+    private_c:
+      cidr: "10.0.4.0/24"
+      availability_zone: "us-east-1c"
+      map_public_ip_on_launch: false
+
+  # Route Tables
+  route_tables:
+    public:
+      routes:
+        - destination: "0.0.0.0/0"
+          target: "internet_gateway"
+          
+    private:
+      routes:
+        - destination: "0.0.0.0/0"
+          target: "nat_gateway"
+
+  # NAT Gateway
+  nat_gateway:
+    enabled: true
+    subnet: "public"
+    elastic_ip: true
+
+# Firewall Configuration
+firewall:
+  # iptables Rules
+  iptables:
+    enabled: true
+    rules:
+      - table: "filter"
+        chain: "INPUT"
+        rule: "-i lo -j ACCEPT"
+        comment: "Allow loopback"
+        
+      - table: "filter"
+        chain: "INPUT"
+        rule: "-m state --state ESTABLISHED,RELATED -j ACCEPT"
+        comment: "Allow established connections"
+        
+      - table: "filter"
+        chain: "INPUT"
+        rule: "-p tcp --dport 22 -j ACCEPT"
+        comment: "Allow SSH"
+        
+      - table: "filter"
+        chain: "INPUT"
+        rule: "-p tcp --dport 5672 -s 10.0.0.0/16 -j ACCEPT"
+        comment: "Allow RabbitMQ AMQP from VPC"
+        
+      - table: "filter"
+        chain: "INPUT"
+        rule: "-p tcp --dport 15672 -s 10.0.0.0/16 -j ACCEPT"
+        comment: "Allow RabbitMQ Management from VPC"
+        
+      - table: "filter"
+        chain: "INPUT"
+        rule: "-p tcp --dport 9090 -s 10.0.0.0/16 -j ACCEPT"
+        comment: "Allow Prometheus from VPC"
+        
+      - table: "filter"
+        chain: "INPUT"
+        rule: "-p tcp --dport 3000 -s 10.0.0.0/16 -j ACCEPT"
+        comment: "Allow Grafana from VPC"
+        
+      - table: "filter"
+        chain: "INPUT"
+        rule: "-j DROP"
+        comment: "Drop all other traffic"
+
+  # firewalld Configuration
+  firewalld:
+    enabled: true
+    zones:
+      public:
+        interfaces: ["eth0"]
+        services: ["ssh"]
+        ports: []
+        sources: []
+        
+      internal:
+        interfaces: ["eth1"]
+        services: ["ssh"]
+        ports: ["5672/tcp", "15672/tcp", "9090/tcp", "3000/tcp"]
+        sources: ["10.0.0.0/16"]
+
+# Intrusion Detection
+intrusion_detection:
+  # Fail2ban Configuration
+  fail2ban:
+    enabled: true
+    jails:
+      sshd:
+        enabled: true
+        port: "ssh"
+        filter: "sshd"
+        logpath: "/var/log/secure"
+        maxretry: 3
+        bantime: 3600
+        findtime: 600
+        
+      rabbitmq:
+        enabled: true
+        port: "5672,15672"
+        filter: "rabbitmq"
+        logpath: "/var/log/rabbitmq/rabbitmq.log"
+        maxretry: 5
+        bantime: 7200
+        findtime: 1200
+
+  # AIDE (Advanced Intrusion Detection Environment)
+  aide:
+    enabled: true
+    database: "/var/lib/aide/aide.db"
+    rules: "/etc/aide.conf"
+    cron_schedule: "0 2 * * *"  # Daily at 2 AM
+
+# Security Monitoring
+security_monitoring:
+  # CloudTrail Configuration
+  cloudtrail:
+    enabled: true
+    name: "rabbitmq-aiml-cloudtrail"
+    s3_bucket: "rabbitmq-aiml-cloudtrail-logs"
+    include_global_service_events: true
+    is_multi_region_trail: true
+    enable_log_file_validation: true
+    
+  # CloudWatch Logs
+  cloudwatch_logs:
+    enabled: true
+    log_groups:
+      - name: "/aws/ec2/rabbitmq"
+        retention_days: 30
+      - name: "/aws/ec2/monitoring"
+        retention_days: 30
+      - name: "/aws/ec2/kubernetes"
+        retention_days: 30
+        
+  # GuardDuty
+  guardduty:
+    enabled: true
+    region: "us-east-1"
+    finding_publishing_frequency: "FIFTEEN_MINUTES"
+    
+  # Security Hub
+  security_hub:
+    enabled: true
+    standards:
+      - "arn:aws:securityhub:us-east-1::standards/cis-aws-foundations-benchmark/v/1.2.0"
+      - "arn:aws:securityhub:us-east-1::standards/pci-dss/v/3.2.1"
+
+# Compliance Configuration
+compliance:
+  # CIS Benchmarks
+  cis_benchmarks:
+    enabled: true
+    level: 2
+    controls:
+      - "1.1.1"
+      - "1.1.2"
+      - "1.1.3"
+      - "1.2.1"
+      - "1.2.2"
+      
+  # PCI DSS
+  pci_dss:
+    enabled: false
+    level: 1
+    requirements:
+      - "1.1"
+      - "1.2"
+      - "1.3"
+      - "1.4"
+      
+  # SOC 2
+  soc2:
+    enabled: false
+    type: "Type II"
+    criteria:
+      - "Security"
+      - "Availability"
+      - "Processing Integrity"
+      - "Confidentiality"
+      - "Privacy"
+
+# Backup and Recovery Security
+backup_security:
+  # Backup Encryption
+  encryption:
+    enabled: true
+    algorithm: "AES-256"
+    key_source: "AWS_KMS"
+    key_id: "alias/rabbitmq-aiml-backup"
+    
+  # Backup Access Control
+  access_control:
+    backup_users: ["backup-service"]
+    restore_users: ["admin", "root"]
+    audit_users: ["audit-service"]
+    
+  # Backup Retention
+  retention:
+    daily: 7
+    weekly: 4
+    monthly: 12
+    yearly: 3
+    
+  # Backup Testing
+  testing:
+    enabled: true
+    schedule: "0 3 * * 0"  # Weekly on Sunday at 3 AM
+    test_restore: true
+    test_validation: true
+
+# Incident Response
+incident_response:
+  # Automated Response
+  automated_response:
+    enabled: true
+    actions:
+      - name: "isolate_instance"
+        trigger: "security_breach"
+        action: "stop_instance"
+        delay: 0
+        
+      - name: "block_ip"
+        trigger: "brute_force_attack"
+        action: "update_security_group"
+        delay: 300
+        
+      - name: "notify_security_team"
+        trigger: "any_security_event"
+        action: "send_notification"
+        delay: 0
+        
+  # Escalation Procedures
+  escalation:
+    level_1:
+      team: "security_team"
+      response_time: "15_minutes"
+      contact_method: "slack"
+      
+    level_2:
+      team: "security_manager"
+      response_time: "30_minutes"
+      contact_method: "phone"
+      
+    level_3:
+      team: "ciso"
+      response_time: "1_hour"
+      contact_method: "phone"
+
+# Security Policies
+security_policies:
+  # Password Policy
+  password_policy:
+    min_length: 12
+    require_uppercase: true
+    require_lowercase: true
+    require_numbers: true
+    require_special_chars: true
+    max_age_days: 90
+    history_count: 12
+    
+  # Account Lockout Policy
+  account_lockout:
+    lockout_threshold: 5
+    lockout_duration_minutes: 30
+    reset_counter_minutes: 30
+    
+  # Session Policy
+  session_policy:
+    timeout_minutes: 30
+    max_concurrent_sessions: 3
+    require_reauthentication: true
+    
+  # Data Classification
+  data_classification:
+    public:
+      encryption_required: false
+      access_control: "read_only"
+      
+    internal:
+      encryption_required: true
+      access_control: "authenticated_users"
+      
+    confidential:
+      encryption_required: true
+      access_control: "authorized_users_only"
+      
+    restricted:
+      encryption_required: true
+      access_control: "need_to_know_basis"
