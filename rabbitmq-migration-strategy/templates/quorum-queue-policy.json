@@ -1,0 +1,60 @@
+{
+  "policies": [
+    {
+      "name": "quorum-default",
+      "pattern": "^(?!amq\\.).*",
+      "apply-to": "queues",
+      "priority": 0,
+      "definition": {
+        "x-queue-type": "quorum",
+        "x-quorum-initial-group-size": 3,
+        "x-delivery-limit": 5,
+        "x-dead-letter-exchange": "dlx",
+        "x-dead-letter-routing-key": "dead-letter"
+      }
+    },
+    {
+      "name": "quorum-critical",
+      "pattern": "^(orders|payments|transactions).*",
+      "apply-to": "queues",
+      "priority": 10,
+      "definition": {
+        "x-queue-type": "quorum",
+        "x-quorum-initial-group-size": 3,
+        "x-delivery-limit": 10,
+        "x-dead-letter-exchange": "dlx.critical",
+        "x-dead-letter-routing-key": "critical.dead-letter",
+        "x-message-ttl": 86400000,
+        "x-max-length": 1000000,
+        "x-overflow": "reject-publish"
+      }
+    },
+    {
+      "name": "quorum-high-throughput",
+      "pattern": "^(events|logs|metrics).*",
+      "apply-to": "queues",
+      "priority": 5,
+      "definition": {
+        "x-queue-type": "quorum",
+        "x-quorum-initial-group-size": 3,
+        "x-delivery-limit": 3,
+        "x-max-length": 5000000,
+        "x-overflow": "drop-head"
+      }
+    }
+  ],
+  "notes": {
+    "quorum-default": "Default policy for all new queues - sets basic quorum configuration with delivery limit and DLX",
+    "quorum-critical": "High-priority policy for critical business queues - stricter limits, longer TTL, reject on overflow",
+    "quorum-high-throughput": "Policy for high-volume queues - lower delivery limit, drop-head overflow"
+  },
+  "deployment": {
+    "instructions": [
+      "1. Create DLX exchanges: dlx, dlx.critical",
+      "2. Create DLQ queues: dead-letter-queue, critical-dead-letter-queue",
+      "3. Bind DLQs to DLX exchanges",
+      "4. Apply policies using: rabbitmqctl set_policy <name> <pattern> '<definition>' --apply-to queues --priority <priority>"
+    ],
+    "example": "rabbitmqctl set_policy quorum-default '^(?!amq\\\\.).*' '{\"x-queue-type\":\"quorum\",\"x-quorum-initial-group-size\":3}' --apply-to queues --priority 0"
+  }
+}
