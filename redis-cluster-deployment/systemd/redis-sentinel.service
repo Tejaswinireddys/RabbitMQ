@@ -1,0 +1,65 @@
+[Unit]
+Description=Redis 8.2.2 Sentinel
+Documentation=https://redis.io/topics/sentinel
+After=network.target
+After=redis.service
+Wants=redis.service
+
+[Service]
+# Service type
+Type=notify
+# Uncomment for forking mode (if daemonize yes in config)
+# Type=forking
+# PIDFile=/opt/cached/current/run/sentinel.pid
+
+# User and group
+User=redis
+Group=redis
+
+# Working directory
+WorkingDirectory=/opt/cached/current
+
+# Environment
+Environment="REDIS_HOME=/opt/cached/current"
+
+# Start command
+ExecStart=/opt/cached/current/bin/redis-sentinel /opt/cached/current/conf/sentinel.conf --supervised systemd --daemonize no
+
+# Stop command
+ExecStop=/opt/cached/current/bin/redis-cli -p 26379 SHUTDOWN
+
+# Reload - Sentinel doesn't support reload, restart instead
+ExecReload=/bin/kill -HUP $MAINPID
+
+# Restart policy
+Restart=always
+RestartSec=5
+TimeoutStartSec=30
+TimeoutStopSec=30
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=65536
+
+# Security settings
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/opt/cached/current/data /opt/cached/current/logs /opt/cached/current/run /opt/cached/current/conf
+
+# Sentinel needs to write to its config file
+# (it rewrites sentinel.conf with runtime state)
+ReadWritePaths=/opt/cached/current/conf/sentinel.conf
+
+# Capability restrictions
+CapabilityBoundingSet=
+AmbientCapabilities=
+
+# System call filter
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallFilter=~@privileged @resources
+
+[Install]
+WantedBy=multi-user.target

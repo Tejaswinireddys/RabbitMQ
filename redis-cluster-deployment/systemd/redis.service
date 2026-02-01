@@ -1,0 +1,61 @@
+[Unit]
+Description=Redis 8.2.2 In-Memory Data Store
+Documentation=https://redis.io/documentation
+After=network.target
+After=disable-thp.service
+Wants=disable-thp.service
+
+[Service]
+# Service type
+Type=notify
+# Uncomment for forking mode (if daemonize yes in config)
+# Type=forking
+# PIDFile=/opt/cached/current/run/redis.pid
+
+# User and group
+User=redis
+Group=redis
+
+# Working directory
+WorkingDirectory=/opt/cached/current
+
+# Environment
+Environment="REDIS_HOME=/opt/cached/current"
+
+# Start command
+ExecStart=/opt/cached/current/bin/redis-server /opt/cached/current/conf/redis.conf --supervised systemd --daemonize no
+
+# Stop command (graceful shutdown)
+ExecStop=/opt/cached/current/bin/redis-cli -a REDIS_AUTH_PASSWORD_CHANGE_ME SHUTDOWN NOSAVE
+
+# Reload command (for config reload)
+ExecReload=/bin/kill -USR2 $MAINPID
+
+# Restart policy
+Restart=always
+RestartSec=5
+TimeoutStartSec=30
+TimeoutStopSec=30
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=65536
+
+# Security settings
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/opt/cached/current/data /opt/cached/current/logs /opt/cached/current/run
+
+# Capability restrictions
+CapabilityBoundingSet=
+AmbientCapabilities=
+
+# System call filter
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallFilter=~@privileged @resources
+
+[Install]
+WantedBy=multi-user.target
