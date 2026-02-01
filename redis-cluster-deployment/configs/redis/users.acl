@@ -1,0 +1,134 @@
+# =============================================================================
+# Redis 8.2.2 Production ACL Configuration
+# =============================================================================
+#
+# Access Control List for fine-grained permissions
+# Path: /opt/cached/current/conf/users.acl
+#
+# Enable in redis.conf:
+#   aclfile /opt/cached/current/conf/users.acl
+#
+# Reload ACL: redis-cli ACL LOAD
+#
+# =============================================================================
+
+# =============================================================================
+# DEFAULT USER (disabled in production)
+# =============================================================================
+# Disable default user - force explicit authentication
+user default off
+
+# =============================================================================
+# ADMIN USER
+# =============================================================================
+# Full access to all commands and keys
+# Use for administrative tasks only
+#
+# Password: Generate with: openssl rand -base64 32
+#
+user admin on >ADMIN_PASSWORD_CHANGE_ME ~* &* +@all
+
+# =============================================================================
+# REPLICATION USER
+# =============================================================================
+# Used for master-replica replication
+# Minimal permissions required for replication
+#
+user replication on >REPLICATION_PASSWORD_CHANGE_ME +psync +replconf +ping
+
+# =============================================================================
+# SENTINEL USER
+# =============================================================================
+# Used by Sentinel for monitoring and failover
+#
+user sentinel on >SENTINEL_PASSWORD_CHANGE_ME +multi +slaveof +ping +exec +subscribe +publish +info +role +client +sentinel
+
+# =============================================================================
+# APPLICATION USER - Read/Write
+# =============================================================================
+# Standard application access
+# Can read and write to all keys except system keys
+#
+user app_readwrite on >APP_RW_PASSWORD_CHANGE_ME ~* &* +@all -@admin -@dangerous
+
+# =============================================================================
+# APPLICATION USER - Read Only
+# =============================================================================
+# Read-only application access
+# Can only read data, no writes
+#
+user app_readonly on >APP_RO_PASSWORD_CHANGE_ME ~* &* +@read +@connection +ping +info
+
+# =============================================================================
+# CACHE USER
+# =============================================================================
+# For caching applications
+# Can read/write with limited commands
+#
+user cache_user on >CACHE_PASSWORD_CHANGE_ME ~cache:* +get +set +setex +del +expire +ttl +exists +mget +mset +incr +decr +ping
+
+# =============================================================================
+# SESSION USER
+# =============================================================================
+# For session storage
+# Limited to session keys with TTL support
+#
+user session_user on >SESSION_PASSWORD_CHANGE_ME ~session:* +get +set +setex +del +expire +ttl +exists +ping
+
+# =============================================================================
+# PUBSUB USER
+# =============================================================================
+# For pub/sub only access
+#
+user pubsub_user on >PUBSUB_PASSWORD_CHANGE_ME &* +subscribe +psubscribe +publish +pubsub +ping
+
+# =============================================================================
+# MONITORING USER
+# =============================================================================
+# For monitoring and metrics collection
+# Read-only access to server info
+#
+user monitor on >MONITOR_PASSWORD_CHANGE_ME +info +ping +client +slowlog +latency +memory +dbsize +lastsave
+
+# =============================================================================
+# QUEUE USER
+# =============================================================================
+# For queue/list operations
+#
+user queue_user on >QUEUE_PASSWORD_CHANGE_ME ~queue:* +lpush +rpush +lpop +rpop +llen +lrange +brpop +blpop +ping
+
+# =============================================================================
+# NOTES
+# =============================================================================
+#
+# ACL Command Categories:
+#   @all        - All commands
+#   @read       - Read-only commands
+#   @write      - Write commands
+#   @set        - SET and similar
+#   @hash       - Hash commands
+#   @list       - List commands
+#   @sortedset  - Sorted set commands
+#   @string     - String commands
+#   @admin      - Administrative commands
+#   @dangerous  - Dangerous commands (FLUSHALL, DEBUG, etc.)
+#   @connection - Connection commands
+#   @pubsub     - Pub/Sub commands
+#
+# Key Patterns:
+#   ~*          - All keys
+#   ~user:*     - Keys starting with "user:"
+#   ~cache:*    - Keys starting with "cache:"
+#
+# Channel Patterns:
+#   &*          - All channels
+#   &events:*   - Channels starting with "events:"
+#
+# Password Formats:
+#   >password   - Cleartext password
+#   #hash       - SHA256 hash
+#
+# Generate SHA256 hash:
+#   echo -n "password" | sha256sum
+#
+# =============================================================================
