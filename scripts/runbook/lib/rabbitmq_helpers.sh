@@ -4,15 +4,28 @@
 # =============================================================================
 # Source after common.sh:
 #   source "$(dirname "$0")/../lib/rabbitmq_helpers.sh"
+#
+# Requires variables from environment.conf:
+#   RABBITMQCTL, RABBITMQ_DIAGNOSTICS, RABBITMQ_PLUGINS, RABBITMQ_UPGRADE
+#   RMQ_NODES, RMQ_MGMT_PORT, RMQ_ADMIN_USER, RMQ_ADMIN_PASS
+#   RMQ_API, RMQ_VHOST, RMQ_SERVICE, RMQ_DATA_DIR, RMQ_LOG_DIR
+#   RMQ_COOKIE_FILE, RMQ_MNESIA_DIR, RMQ_NODENAME_PREFIX
 # =============================================================================
 
 # --- RabbitMQ API call ---
 rmq_api() {
     local endpoint="$1"
-    curl -s -u "${RMQ_ADMIN_USER}:${RMQ_ADMIN_PASS}" "${RMQ_API}${endpoint}"
+    shift
+    curl -s -u "${RMQ_ADMIN_USER}:${RMQ_ADMIN_PASS}" "${RMQ_API}${endpoint}" "$@"
 }
 
-# --- Get cluster status ---
+# --- Get cluster status via CLI ---
+rmq_cluster_status_cli() {
+    local node="${1:-${RMQ_NODES[0]}}"
+    remote_exec "${node}" "sudo ${RABBITMQCTL} cluster_status" 2>/dev/null
+}
+
+# --- Get cluster status via API ---
 rmq_cluster_status() {
     for node in "${RMQ_NODES[@]}"; do
         local api="http://${node}:${RMQ_MGMT_PORT}/api"
@@ -24,6 +37,48 @@ rmq_cluster_status() {
             echo -e "  ${RED}[DOWN]${NC} ${node}"
         fi
     done
+}
+
+# --- Count running nodes ---
+rmq_running_node_count() {
+    local count=0
+    for node in "${RMQ_NODES[@]}"; do
+        local api="http://${node}:${RMQ_MGMT_PORT}/api"
+        local status
+        status=$(curl -s -o /dev/null -w "%{http_code}" -u "${RMQ_ADMIN_USER}:${RMQ_ADMIN_PASS}" "${api}/healthchecks/node" 2>/dev/null)
+        [[ "${status}" == "200" ]] && ((count++))
+    done
+    echo "${count}"
+}
+
+# --- CRITICAL: Check if it's safe to take a node down ---
+rmq_safe_to_stop() {
+    local target_node="$1"
+    local running
+    running=$(rmq_running_node_count)
+    if [[ ${running} -le 2 ]]; then
+        log_error "UNSAFE: Only ${running} node(s) running. With pause_minority, stopping another node will HALT the cluster."
+        log_error "At least 2 of 3 nodes must remain running for the cluster to function."
+        return 1
+    fi
+    log_info "Safe to stop ${target_node}: ${running} nodes currently running"
+    return 0
+}
+
+# --- Drain node before maintenance (RabbitMQ 3.12+) ---
+rmq_drain_node() {
+    local node="$1"
+    log_step "Draining ${node} (marking for maintenance)..."
+    remote_exec "${node}" "sudo ${RABBITMQ_UPGRADE} drain" 2>/dev/null
+    log_info "Node ${node} drained — no new clients will connect"
+}
+
+# --- Revive node after maintenance ---
+rmq_revive_node() {
+    local node="$1"
+    log_step "Reviving ${node} (removing maintenance mode)..."
+    remote_exec "${node}" "sudo ${RABBITMQ_UPGRADE} revive" 2>/dev/null
+    log_info "Node ${node} revived — accepting connections"
 }
 
 # --- Get node health ---
@@ -76,6 +131,42 @@ except: pass
     echo "${alarmed}"
 }
 
+# --- Verify Erlang cookie consistency across nodes ---
+rmq_verify_cookie() {
+    log_step "Verifying Erlang cookie consistency..."
+    local first_cookie=""
+    for node in "${RMQ_NODES[@]}"; do
+        local cookie
+        cookie=$(remote_exec "${node}" "sudo cat ${RMQ_COOKIE_FILE} 2>/dev/null" || echo "UNREADABLE")
+        if [[ -z "${first_cookie}" ]]; then
+            first_cookie="${cookie}"
+            echo "  ${node}: cookie=${cookie:0:8}... (reference)"
+        elif [[ "${cookie}" != "${first_cookie}" ]]; then
+            echo -e "  ${RED}${node}: MISMATCH — cookie differs from ${RMQ_NODES[0]}${NC}"
+            log_error "Erlang cookie mismatch will prevent cluster formation"
+        else
+            echo -e "  ${GREEN}${node}: matches${NC}"
+        fi
+    done
+}
+
+# --- Check quorum queue health ---
+rmq_quorum_queue_health() {
+    rmq_api "/queues/${RMQ_VHOST}" 2>/dev/null | python3 -c "
+import sys, json
+try:
+    queues = json.load(sys.stdin)
+    quorum_qs = [q for q in queues if q.get('type') == 'quorum']
+    print(f'  Total quorum queues: {len(quorum_qs)}')
+    for q in quorum_qs:
+        members = len(q.get('members', []))
+        online = len(q.get('online', []))
+        if online < members:
+            print(f\"  WARNING: {q['name']} — {online}/{members} members online\")
+except: print('  Unable to parse')
+" 2>/dev/null
+}
+
 # --- List queues with depth ---
 rmq_queue_depths() {
     local vhost="${1:-${RMQ_VHOST}}"
@@ -109,16 +200,38 @@ except: print('Unable to parse connection data')
 " 2>/dev/null
 }
 
-# --- Restart RabbitMQ on a node (with confirmation) ---
+# --- Restart RabbitMQ on a node (with safety check) ---
 rmq_restart_node() {
     local node="$1"
+
+    # Safety check: ensure quorum maintained
+    if ! rmq_safe_to_stop "${node}"; then
+        log_error "Aborting restart — would break cluster quorum"
+        return 1
+    fi
+
     confirm_action "About to restart RabbitMQ on ${node}. This will disconnect clients."
+    log_step "Draining ${node} before restart..."
+    rmq_drain_node "${node}" 2>/dev/null || true
+    sleep 5
+
     log_step "Stopping RabbitMQ on ${node}..."
     remote_exec "${node}" "sudo systemctl stop ${RMQ_SERVICE}"
     sleep 5
+
     log_step "Starting RabbitMQ on ${node}..."
     remote_exec "${node}" "sudo systemctl start ${RMQ_SERVICE}"
     sleep 15
+
+    log_step "Reviving ${node}..."
+    rmq_revive_node "${node}" 2>/dev/null || true
+
     log_step "Verifying ${node} rejoined cluster..."
-    remote_exec "${node}" "sudo rabbitmqctl cluster_status"
+    remote_exec "${node}" "sudo ${RABBITMQCTL} cluster_status"
+}
+
+# --- Check feature flags ---
+rmq_feature_flags() {
+    local node="${1:-${RMQ_NODES[0]}}"
+    remote_exec "${node}" "sudo ${RABBITMQCTL} list_feature_flags" 2>/dev/null
 }

@@ -50,7 +50,7 @@ report_line "${REPORT_FILE}" ""
 report_line "${REPORT_FILE}" "Step 5: Erlang Memory Breakdown"
 for node in "${RMQ_NODES[@]}"; do
     echo "--- ${node} ---" | tee -a "${REPORT_FILE}"
-    remote_exec "${node}" "sudo rabbitmqctl eval 'rabbit_vm:memory().' 2>/dev/null" | tee -a "${REPORT_FILE}" || true
+    remote_exec "${node}" "sudo ${RABBITMQCTL} eval 'rabbit_vm:memory().' 2>/dev/null" | tee -a "${REPORT_FILE}" || true
 done
 
 # Step 6: Remediation options

@@ -19,7 +19,7 @@ log_step "Step 1: Checking partition status..."
 report_line "${REPORT_FILE}" "Step 1: Partition Status"
 for node in "${RMQ_NODES[@]}"; do
     echo "--- ${node} ---" | tee -a "${REPORT_FILE}"
-    remote_exec "${node}" "sudo rabbitmqctl cluster_status 2>/dev/null | grep -A5 'partitions\|alarms'" | tee -a "${REPORT_FILE}" || true
+    remote_exec "${node}" "sudo ${RABBITMQCTL} cluster_status 2>/dev/null | grep -A5 'partitions\|alarms'" | tee -a "${REPORT_FILE}" || true
 done
 
 # Step 2: Network connectivity matrix
@@ -41,7 +41,7 @@ report_line "${REPORT_FILE}" ""
 report_line "${REPORT_FILE}" "Step 3: Erlang Cookie & Distribution"
 for node in "${RMQ_NODES[@]}"; do
     echo "--- ${node} ---" | tee -a "${REPORT_FILE}"
-    remote_exec "${node}" "sudo rabbitmqctl eval 'net_adm:ping_list(nodes()).' 2>/dev/null" | tee -a "${REPORT_FILE}" || true
+    remote_exec "${node}" "sudo ${RABBITMQCTL} eval 'net_adm:ping_list(nodes()).' 2>/dev/null" | tee -a "${REPORT_FILE}" || true
 done
 
 # Step 4: Check partition handling mode
@@ -50,7 +50,7 @@ report_line "${REPORT_FILE}" ""
 report_line "${REPORT_FILE}" "Step 4: Partition Handling Configuration"
 for node in "${RMQ_NODES[@]}"; do
     echo "--- ${node} ---" | tee -a "${REPORT_FILE}"
-    remote_exec "${node}" "sudo rabbitmqctl eval 'application:get_env(rabbit, cluster_partition_handling).' 2>/dev/null" | tee -a "${REPORT_FILE}" || true
+    remote_exec "${node}" "sudo ${RABBITMQCTL} eval 'application:get_env(rabbit, cluster_partition_handling).' 2>/dev/null" | tee -a "${REPORT_FILE}" || true
 done
 
 # Step 5: Remediation

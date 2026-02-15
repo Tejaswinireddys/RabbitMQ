@@ -4,6 +4,13 @@
 # =============================================================================
 # Source after common.sh:
 #   source "$(dirname "$0")/../lib/redis_helpers.sh"
+#
+# Requires variables from environment.conf:
+#   REDIS_CLI, REDIS_SERVER_BIN, REDIS_SENTINEL_BIN
+#   REDIS_NODES, REDIS_PORT, SENTINEL_PORT, REDIS_AUTH_PASS
+#   REDIS_CONF_FILE, SENTINEL_CONF_FILE, SENTINEL_MASTER_NAME
+#   REDIS_SERVICE, SENTINEL_SERVICE, REDIS_DATA_DIR, REDIS_LOG_DIR
+#   REDIS_CMD_CONFIG, REDIS_CMD_SHUTDOWN, REDIS_CMD_BGSAVE
 # =============================================================================
 
 # --- Redis CLI command ---
@@ -12,9 +19,9 @@ redis_cmd() {
     local port="${2:-${REDIS_PORT}}"
     shift 2
     if [[ -n "${REDIS_AUTH_PASS}" ]]; then
-        "${REDIS_BIN}/redis-cli" -h "${host}" -p "${port}" -a "${REDIS_AUTH_PASS}" --no-auth-warning "$@"
+        "${REDIS_CLI}" -h "${host}" -p "${port}" -a "${REDIS_AUTH_PASS}" --no-auth-warning "$@"
     else
-        "${REDIS_BIN}/redis-cli" -h "${host}" -p "${port}" "$@"
+        "${REDIS_CLI}" -h "${host}" -p "${port}" "$@"
     fi
 }
 
@@ -34,6 +41,87 @@ redis_get_master() {
 redis_role() {
     local host="$1"
     redis_cmd "${host}" "${REDIS_PORT}" ROLE 2>/dev/null | head -1
+}
+
+# --- Identify which node is master ---
+redis_identify_master_node() {
+    for node in "${REDIS_NODES[@]}"; do
+        local role
+        role=$(redis_role "${node}")
+        if [[ "${role}" == "master" ]]; then
+            echo "${node}"
+            return 0
+        fi
+    done
+    # Fallback to Sentinel
+    redis_get_master
+}
+
+# --- Count running nodes ---
+redis_running_node_count() {
+    local count=0
+    for node in "${REDIS_NODES[@]}"; do
+        local ping
+        ping=$(redis_cmd "${node}" "${REDIS_PORT}" PING 2>/dev/null)
+        [[ "${ping}" == "PONG" ]] && ((count++))
+    done
+    echo "${count}"
+}
+
+# --- Count running sentinels ---
+redis_running_sentinel_count() {
+    local count=0
+    for node in "${REDIS_NODES[@]}"; do
+        local ping
+        ping=$(sentinel_cmd "${node}" PING 2>/dev/null)
+        [[ "${ping}" == "PONG" ]] && ((count++))
+    done
+    echo "${count}"
+}
+
+# --- CRITICAL: Check if safe to stop a node ---
+redis_safe_to_stop() {
+    local target_node="$1"
+    local role
+    role=$(redis_role "${target_node}")
+    local running
+    running=$(redis_running_node_count)
+    local sentinels
+    sentinels=$(redis_running_sentinel_count)
+
+    # Check: min-replicas-to-write constraint
+    if [[ "${role}" != "master" && ${running} -le 2 ]]; then
+        log_warn "Only ${running} nodes running. Stopping this replica will leave master with <1 replica."
+        log_warn "If min-replicas-to-write=1, master will STOP accepting writes."
+    fi
+
+    # Check: Never stop master without failover first
+    if [[ "${role}" == "master" ]]; then
+        log_error "STOP: ${target_node} is the MASTER. You must failover FIRST before stopping."
+        log_error "Run: ${REDIS_CLI} -h ${target_node} -p ${SENTINEL_PORT} SENTINEL failover ${SENTINEL_MASTER_NAME}"
+        return 1
+    fi
+
+    # Check: Sentinel quorum
+    if [[ ${sentinels} -le 2 ]]; then
+        log_warn "Only ${sentinels} Sentinels running. Stopping Sentinel on this node will break quorum (need 2/3)."
+        log_warn "Without quorum, automatic failover is IMPOSSIBLE."
+    fi
+
+    log_info "Role: ${role}, Running nodes: ${running}, Sentinels: ${sentinels}"
+    return 0
+}
+
+# --- Manual failover (graceful) ---
+redis_manual_failover() {
+    local sentinel_host="${1:-${REDIS_NODE1}}"
+    log_step "Triggering manual failover via Sentinel on ${sentinel_host}..."
+    sentinel_cmd "${sentinel_host}" SENTINEL failover "${SENTINEL_MASTER_NAME}" 2>/dev/null
+    log_info "Failover initiated. Waiting 15s for promotion..."
+    sleep 15
+    local new_master
+    new_master=$(redis_get_master)
+    log_info "New master: ${new_master}"
 }
 
 # --- Cluster status check ---
@@ -102,16 +190,30 @@ redis_slowlog() {
     redis_cmd "${host}" "${REDIS_PORT}" SLOWLOG GET "${count}" 2>/dev/null
 }
 
-# --- Restart Redis on a node ---
+# --- Verify Sentinel config not corrupted ---
+redis_verify_sentinel_conf() {
+    local node="$1"
+    log_step "Checking sentinel.conf on ${node}..."
+    local has_monitor
+    has_monitor=$(remote_exec "${node}" "grep -c 'sentinel monitor' ${SENTINEL_CONF_FILE} 2>/dev/null" || echo "0")
+    if [[ "${has_monitor}" -lt 1 ]]; then
+        log_error "${node}: sentinel.conf missing 'sentinel monitor' directive — Sentinel will not work"
+        return 1
+    fi
+    log_info "${node}: sentinel.conf appears valid"
+    return 0
+}
+
+# --- Restart Redis on a node (with safety checks) ---
 redis_restart_node() {
     local node="$1"
-    local role
-    role=$(redis_role "${node}")
-    if [[ "${role}" == "master" ]]; then
-        confirm_action "WARNING: ${node} is the MASTER. Restarting will trigger failover. Proceed?"
-    else
-        confirm_action "About to restart Redis on ${node} (${role})."
+
+    if ! redis_safe_to_stop "${node}"; then
+        log_error "Aborting — use redis_manual_failover first if this is the master"
+        return 1
     fi
+
+    confirm_action "About to restart Redis on ${node} ($(redis_role "${node}"))."
     log_step "Stopping Redis on ${node}..."
     remote_exec "${node}" "sudo systemctl stop ${REDIS_SERVICE}"
     sleep 3

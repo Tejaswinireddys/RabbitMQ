@@ -68,7 +68,7 @@ report_line "${REPORT_FILE}" ""
 report_line "${REPORT_FILE}" "Step 5: Network Latency"
 for node in "${REDIS_NODES[@]}"; do
     if [[ "${node}" != "${MASTER}" ]]; then
-        LATENCY=$(remote_exec "${node}" "redis-cli -h ${MASTER} -p ${REDIS_PORT} ${REDIS_AUTH_PASS:+-a ${REDIS_AUTH_PASS}} --latency-history -i 1 2>/dev/null | head -3" 2>/dev/null || echo "unable to measure")
+        LATENCY=$(remote_exec "${node}" "${REDIS_CLI} -h ${MASTER} -p ${REDIS_PORT} ${REDIS_AUTH_PASS:+-a ${REDIS_AUTH_PASS}} --latency-history -i 1 2>/dev/null | head -3" 2>/dev/null || echo "unable to measure")
         echo "  ${node} -> ${MASTER}: ${LATENCY}" | tee -a "${REPORT_FILE}"
     fi
 done
