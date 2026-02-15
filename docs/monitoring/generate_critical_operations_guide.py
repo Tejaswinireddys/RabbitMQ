@@ -166,7 +166,9 @@ def build_toc(doc):
         "  A.7  Network Partition Handling",
         "  A.8  Feature Flags — One-Way Gate",
         "  A.9  Port & Firewall Requirements",
-        "  A.10 What NOT To Do — RabbitMQ",
+        "  A.10 Why rabbitmqctl list_queues Hangs (and the Fix)",
+        "  A.11 Pre-Restart Decision Script",
+        "  A.12 What NOT To Do — RabbitMQ",
         "",
         "Section B: Redis + Sentinel Critical Operational Notes",
         "  B.1  Sentinel Quorum (2 of 3)",
@@ -510,8 +512,101 @@ def build_section_a(doc):
         "CRITICAL"
     )
 
-    # A.10 What NOT To Do
-    doc.add_heading('A.10  What NOT To Do — RabbitMQ', level=2)
+    # A.10 list_queues Hangs
+    doc.add_heading('A.10  Why rabbitmqctl list_queues Hangs (and the Fix)', level=2)
+
+    add_warning_box(doc,
+        "rabbitmqctl list_queues contacts EVERY queue leader across the cluster. "
+        "It will HANG INDEFINITELY if any queue leader is on a node that is down, "
+        "unreachable, or paused (pause_minority). This is by design — the CLI waits "
+        "for a response from each queue.",
+        "CRITICAL"
+    )
+
+    doc.add_paragraph("When it hangs:")
+    add_bullet_list(doc, [
+        "A quorum queue's leader is on a node that is down or partitioned",
+        "A classic queue's master is on a paused node (pause_minority)",
+        "The Mnesia stats database is overloaded (too many queues/connections)",
+        "The Erlang distribution channel between nodes is saturated",
+    ])
+
+    doc.add_paragraph("Solutions (use these instead):")
+
+    add_styled_table(doc,
+        ["Method", "Command", "Hangs?", "When to Use"],
+        [
+            ["Management HTTP API\n(RECOMMENDED)",
+             "curl -s -u admin:pass http://node:15672/api/queues/%2F",
+             "NEVER — returns cached stats",
+             "Always. Default for all automation."],
+            ["CLI with --local flag",
+             "sudo ${RABBITMQCTL} list_queues --local name messages --timeout 60000",
+             "NO — only queries local node",
+             "When you need CLI and only want queues on this node"],
+            ["CLI with --timeout",
+             "sudo ${RABBITMQCTL} list_queues name messages --timeout 60000",
+             "May hang up to timeout",
+             "When API is unavailable (management plugin down)"],
+            ["timeout wrapper",
+             "sudo timeout 60 ${RABBITMQCTL} list_queues name messages",
+             "Killed after 60s",
+             "Last resort — will kill the process if it hangs"],
+        ]
+    )
+
+    add_code_block(doc,
+        "# RECOMMENDED: Use Management API (never hangs)\n"
+        "curl -s -u ${RMQ_ADMIN_USER}:${RMQ_ADMIN_PASS} \\\n"
+        "  http://${RMQ_NODE1}:${RMQ_MGMT_PORT}/api/queues/%2F?columns=name,messages,consumers,type,state,leader\n\n"
+        "# If you MUST use CLI:\n"
+        "sudo ${RABBITMQCTL} list_queues --local name messages consumers type --timeout 60000\n\n"
+        "# With OS-level timeout (force-kills if hangs):\n"
+        "sudo timeout 60 ${RABBITMQCTL} list_queues name messages"
+    )
+
+    add_warning_box(doc,
+        "All runbook automation scripts use the Management HTTP API by default. "
+        "The scripts/runbook/lib/rabbitmq_helpers.sh library provides rmq_list_queues() "
+        "which tries the API first and falls back to CLI with --local --timeout only if the API is unreachable.",
+        "NOTE"
+    )
+
+    # A.11 Restart Decision Script
+    doc.add_heading('A.11  Pre-Restart Decision Script', level=2)
+    doc.add_paragraph(
+        'Before restarting ANY node, run the restart decision script. It performs all safety checks '
+        'automatically and gives you a per-node SAFE/UNSAFE verdict.'
+    )
+
+    add_code_block(doc,
+        "# Check all nodes — which one can I safely restart?\n"
+        "./scripts/runbook/rabbitmq/rb-rmq-008-restart-decision.sh\n\n"
+        "# Check a specific node:\n"
+        "./scripts/runbook/rabbitmq/rb-rmq-008-restart-decision.sh rabbitmq-node1"
+    )
+
+    doc.add_paragraph("The script checks:")
+    add_bullet_list(doc, [
+        "Cluster liveness — how many nodes are running (need 3/3 to restart any)",
+        "Memory/disk alarms — must be resolved before restarts",
+        "Network partitions — must be resolved before restarts",
+        "Queue leader distribution — which node leads the most queues (restart that one last)",
+        "Quorum-critical status — is this node the last member of any quorum queue",
+        "Connection distribution — how many clients will be disconnected",
+        "Provides recommended restart ORDER (fewest queues → most queues)",
+        "Lists queues using HTTP API (never hangs)",
+    ])
+
+    add_warning_box(doc,
+        "The Redis equivalent script is: scripts/runbook/redis/rb-redis-008-restart-decision.sh\n"
+        "It checks master/replica roles, Sentinel quorum, replication lag, "
+        "and min-replicas-to-write constraints.",
+        "IMPORTANT"
+    )
+
+    # A.12 What NOT To Do
+    doc.add_heading('A.12  What NOT To Do — RabbitMQ', level=2)
 
     danger_items = [
         ("NEVER stop 2+ nodes simultaneously",
